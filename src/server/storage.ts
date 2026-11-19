@@ -254,7 +254,7 @@ function getInitialDatabase(): DatabaseSchema {
     {
       id: '27f86505-bb19-465f-9597-aecf7ec7ee85',
       email: 'bhaskardattmishra0101@gmail.com',
-      password_hash: '', // Set via Supabase Auth or initial setup
+      password_hash: '10593a12dfd49a326354f7a84d789543:21c33f6dd9d9c82a44253681dcfe1847c38c9682c72a9e68017484151e44bbe09d2f1b232a510f935272021656e1fef5a278ba771ca24a4bc20d2be30e235b94', // Set via Supabase Auth or initial setup
       role: 'super_admin',
       vip_active: true,
       vip_expires_at: nextYear,
