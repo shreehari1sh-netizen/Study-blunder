@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#070b14"/>
+    </linearGradient>
+    <linearGradient id="fox" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <rect width="504" height="504" x="4" y="4" rx="124" fill="none" stroke="url(#glow)" stroke-width="6" opacity="0.4"/>
+  <!-- Fox ears & head -->
+  <path d="M120 180 L180 290 L100 320 Z" fill="#c2410c"/>
+  <path d="M392 180 L332 290 L412 320 Z" fill="#c2410c"/>
+  <path d="M140 200 L185 285 L125 305 Z" fill="#fed7aa"/>
+  <path d="M372 200 L327 285 L387 305 Z" fill="#fed7aa"/>
+  <!-- Main Face -->
+  <path d="M160 270 Q256 230 352 270 L352 350 Q256 420 160 350 Z" fill="url(#fox)"/>
+  <!-- Cheeks -->
+  <path d="M160 320 Q200 360 256 360 Q210 390 170 370 Z" fill="#ffffff"/>
+  <path d="M352 320 Q312 360 256 360 Q302 390 342 370 Z" fill="#ffffff"/>
+  <!-- Eyes -->
+  <ellipse cx="205" cy="305" rx="16" ry="20" fill="#0f172a"/>
+  <circle cx="210" cy="300" r="6" fill="#ffffff"/>
+  <ellipse cx="307" cy="305" rx="16" ry="20" fill="#0f172a"/>
+  <circle cx="312" cy="300" r="6" fill="#ffffff"/>
+  <!-- Nose -->
+  <polygon points="256,340 244,324 268,324" fill="#0f172a"/>
+  <!-- Academic Hat (Graduation Cap) -->
+  <polygon points="256,120 380,165 256,210 132,165" fill="#4f46e5"/>
+  <polygon points="256,120 380,165 256,210 132,165" fill="none" stroke="#818cf8" stroke-width="4"/>
+  <rect x="220" y="200" width="72" height="28" rx="6" fill="#3730a3"/>
+  <!-- Tassel -->
+  <path d="M256 165 Q330 180 340 240" fill="none" stroke="#fbbf24" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="340" cy="245" r="8" fill="#fbbf24"/>
+  <!-- STUDY FOX text banner -->
+  <text x="256" y="465" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="38" fill="#ffffff" text-anchor="middle" letter-spacing="4">STUDY FOX</text>
+</svg>

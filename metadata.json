@@ -1,0 +1,6 @@
+{
+  "name": "Education Platform & Admin Portal",
+  "description": "Mobile-first education access platform featuring live educational portals, VIP memberships, and a comprehensive 11-section administrative control panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: study-fox
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ANDROID_PACKAGE_NAME
+        value: com.onrender.study_fox.twa
+      - key: ANDROID_SHA256_FINGERPRINT
+        value: 94:5B:D7:E0:19:82:66:C0:4D:CB:D4:70:A0:55:F1:E5:9E:2A:E8:48:81:5D:3F:52:9D:9D:9E:98:82:E4:EC:0D
