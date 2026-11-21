@@ -1,6 +1,6 @@
 {
-  "name": "Education Platform & Admin Portal",
-  "description": "Mobile-first education access platform featuring live educational portals, VIP memberships, and a comprehensive 11-section administrative control panel.",
+  "name": "WhiteLabel SaaS Forge Studio",
+  "description": "Multi-tenant white-label SaaS base model engine for managing multiple clients, custom branding, isolated databases, and instant deployment configurations without rewriting code.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

@@ -378,26 +378,26 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
             currentScreen={previewScreen}
             isPreview={true}
           />
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl bg-[#090E1C]/95 backdrop-blur-xl border border-indigo-500/50 rounded-2xl p-3 shadow-2xl shadow-indigo-950/80 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl bg-[#090E1C]/95 backdrop-blur-xl border border-[#FF2525]/50 rounded-2xl p-3 shadow-2xl shadow-[#FF2525]/25 flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="text-xl shrink-0">{activePreviewFestival.icon}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF2525]/20 text-[#FF2525] border border-[#FF2525]/40">
                     Admin Preview Only
                   </span>
                   <span className="text-xs font-extrabold text-white truncate">
                     {activePreviewFestival.name}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 truncate">
+                <p className="text-[10px] text-[#929292] truncate">
                   Live students do not see this preview until you activate the festival.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-0.5 text-[10px] font-bold">
+              <div className="flex items-center bg-[#141414]/90 border border-[#454545] rounded-xl p-0.5 text-[10px] font-bold">
                 {(['home', 'vip', 'profile'] as FestivalTargetScreen[]).map((scr) => (
                   <button
                     key={scr}
@@ -405,8 +405,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                     onClick={() => setPreviewScreen(scr)}
                     className={`px-2 py-1 rounded-lg uppercase transition-colors ${
                       previewScreen === scr
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-[#FF2525] text-white'
+                        : 'text-[#929292] hover:text-[#F5F5F5]'
                     }`}
                   >
                     {scr}
@@ -422,7 +422,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                     setPreviewFestival(null);
                     handleRequestToggleFestival(target, true, false);
                   }}
-                  className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-extrabold flex items-center gap-1 shadow-md"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#FF2525] hover:bg-[#FF2525] text-white text-[11px] font-extrabold flex items-center gap-1 shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Activate Live</span>
@@ -432,7 +432,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setPreviewFestival(null)}
-                className="px-2.5 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white text-[11px] font-extrabold flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-[#FF2525]/90 hover:bg-[#FF2525] text-white text-[11px] font-extrabold flex items-center gap-1"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Exit Preview</span>
@@ -443,20 +443,20 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
       )}
 
       {/* SECTION HEADER & GLOBAL MASTER SWITCH CARD */}
-      <div className="bg-[#0C1222] border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+      <div className="bg-[#1D1D1D] border border-[#454545] rounded-2xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <Sparkles className="w-5 h-5 text-amber-400" />
+              <Sparkles className="w-5 h-5 text-[#FF762E]" />
               <h2 className="text-base sm:text-lg font-extrabold text-white">
                 Festival Decoration Manager
               </h2>
-              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#FF762E]/15 text-[#FF762E] border border-[#FF762E]/50">
                 15 Cultural & National Themes
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              Control, preview, customize, and schedule non-intrusive festive overlays across Home, VIP, and Profile screens without altering the core STUDY FOX layout.
+            <p className="text-xs text-[#929292]">
+              Control, preview, customize, and schedule non-intrusive festive overlays across Home, VIP, and Profile screens without altering the core STUDY BLUNDER layout.
             </p>
           </div>
 
@@ -464,16 +464,16 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
           <div
             className={`flex items-center justify-between sm:justify-end gap-3 px-4 py-3 rounded-2xl border transition-colors shrink-0 ${
               globalEnabled
-                ? 'bg-emerald-950/30 border-emerald-700/50'
-                : 'bg-rose-950/30 border-rose-800/50'
+                ? 'bg-[#1D1D1D]/30 border-[#C5C5C5]/60'
+                : 'bg-[#FF2525]/15 border-[#FF2525]/55'
             }`}
           >
             <div>
               <p className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                <Power className={`w-3.5 h-3.5 ${globalEnabled ? 'text-emerald-400' : 'text-rose-400'}`} />
+                <Power className={`w-3.5 h-3.5 ${globalEnabled ? 'text-[#F5F5F5]' : 'text-[#FF2525]'}`} />
                 <span>Festival Decorations – {globalEnabled ? 'ON' : 'OFF'}</span>
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-[#929292]">
                 {globalEnabled
                   ? 'Master switch is enabled'
                   : 'All decorations globally hidden'}
@@ -485,7 +485,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               onClick={handleToggleGlobalMaster}
               aria-label="Toggle Global Festival Decorations"
               className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                globalEnabled ? 'bg-emerald-600' : 'bg-slate-700'
+                globalEnabled ? 'bg-[#FF2525]' : 'bg-[#2A2A2A]'
               } ${togglingMaster ? 'opacity-60' : ''}`}
             >
               <span
@@ -501,15 +501,15 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
         <div
           className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
             !globalEnabled
-              ? 'bg-rose-950/20 border-rose-800/40 text-rose-200'
+              ? 'bg-[#FF2525]/15 border-[#FF2525]/55 text-[#FF2525]'
               : activeFestival
-              ? 'bg-gradient-to-r from-amber-950/40 via-indigo-950/40 to-purple-950/40 border-amber-500/40'
-              : 'bg-[#080D19] border-slate-800/80'
+              ? 'bg-gradient-to-r from-amber-950/40 via-[#C90000] to-[#C90000] border-[#FF762E]/50'
+              : 'bg-[#141414] border-[#454545]/80'
           }`}
         >
           {!globalEnabled ? (
             <div className="flex items-center gap-2.5 text-xs">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-[#FF2525] shrink-0" />
               <span>
                 <strong>Global Master Switch is OFF.</strong> No festival decorations are being shown to users. Saved configurations and schedules remain intact.
               </span>
@@ -517,21 +517,21 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
           ) : activeFestival ? (
             <>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-xl shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#FF762E]/15 border border-[#FF762E]/50 flex items-center justify-center text-xl shrink-0">
                   {activeFestival.icon}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF2525]/20 text-[#F5F5F5] border border-[#C5C5C5]/60">
                       Currently Active ({managerState?.active_source === 'schedule' ? 'Scheduled IST' : 'Manual'})
                     </span>
                     <span className="text-sm font-extrabold text-white">
                       {activeFestival.name} {activeFestival.icon}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 truncate mt-0.5">
-                    Banner: <span className="text-amber-300 font-semibold">“{activeFestival.banner_text}”</span> • Screens:{' '}
-                    <span className="uppercase font-bold text-indigo-300">
+                  <p className="text-[11px] text-[#C5C5C5] truncate mt-0.5">
+                    Banner: <span className="text-[#FF762E] font-semibold">“{activeFestival.banner_text}”</span> • Screens:{' '}
+                    <span className="uppercase font-bold text-[#FF2525]">
                       {activeFestival.target_screens.join(', ')}
                     </span>
                   </p>
@@ -542,16 +542,16 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setPreviewFestival(activeFestival)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#F5F5F5] text-xs font-bold flex items-center gap-1.5"
                 >
-                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  <Eye className="w-3.5 h-3.5 text-[#FF2525]" />
                   <span>Preview</span>
                 </button>
                 <button
                   type="button"
                   disabled={togglingFestivalId === activeFestival.id}
                   onClick={() => handleRequestToggleFestival(activeFestival, false)}
-                  className="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-[#FF2525]/90 hover:bg-[#FF2525] text-white text-xs font-bold flex items-center gap-1.5"
                 >
                   <Power className="w-3.5 h-3.5" />
                   <span>Turn OFF</span>
@@ -559,14 +559,14 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-between w-full gap-2 text-xs text-slate-400">
+            <div className="flex items-center justify-between w-full gap-2 text-xs text-[#929292]">
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[#F5F5F5] shrink-0" />
                 <span>
-                  <strong>No festival decoration is currently active.</strong> The STUDY FOX website & APK are displaying their clean default UI.
+                  <strong>No festival decoration is currently active.</strong> The STUDY BLUNDER website & APK are displaying their clean default UI.
                 </span>
               </div>
-              <span className="text-[10px] text-slate-500 font-mono shrink-0 hidden sm:inline">
+              <span className="text-[10px] text-[#929292] font-mono shrink-0 hidden sm:inline">
                 Timezone: Asia/Kolkata (IST)
               </span>
             </div>
@@ -576,13 +576,13 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
         {/* SEARCH & FILTER BAR */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
           <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#929292] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search 15 festivals by name or greeting..."
-              className="w-full bg-[#080D19] border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#141414] border border-[#454545] rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-[#929292]/60 focus:outline-none focus:border-[#FF2525]/50"
             />
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -608,8 +608,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                 onClick={() => setStatusFilter(tab.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
                   statusFilter === tab.id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-[#080D19] text-slate-400 hover:text-slate-200 border border-slate-800'
+                    ? 'bg-[#FF2525] text-white'
+                    : 'bg-[#141414] text-[#929292] hover:text-[#F5F5F5] border border-[#454545]'
                 }`}
               >
                 {tab.label}
@@ -621,15 +621,15 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
 
       {/* ERROR OR LOADING STATE */}
       {error && (
-        <div className="p-3.5 rounded-2xl bg-rose-950/70 border border-rose-700/60 text-rose-200 text-xs flex items-center justify-between gap-3">
+        <div className="p-3.5 rounded-2xl bg-[#FF2525]/15 border border-[#FF2525]/55 text-[#FF2525] text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-[#FF2525] shrink-0" />
             <span>{error}</span>
           </div>
           <button
             type="button"
             onClick={() => loadFestivalManager()}
-            className="px-3 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-white font-bold"
+            className="px-3 py-1 rounded-lg bg-[#FF2525]/15 hover:bg-rose-800 text-white font-bold"
           >
             Retry
           </button>
@@ -641,7 +641,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-48 rounded-2xl bg-[#0C1222] border border-slate-800/80 p-4 animate-pulse"
+              className="h-48 rounded-2xl bg-[#1D1D1D] border border-[#454545]/80 p-4 animate-pulse"
             />
           ))}
         </div>
@@ -662,8 +662,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   borderColor: isActive ? `${fest.primary_accent}88` : undefined,
                   boxShadow: isActive ? `0 8px 30px -10px ${fest.primary_accent}35` : undefined,
                 }}
-                className={`rounded-2xl bg-[#0C1222] border transition-all p-4 flex flex-col justify-between gap-3.5 ${
-                  isActive ? 'border-amber-500/70 bg-gradient-to-b from-[#111931] to-[#0C1222]' : 'border-slate-800/90'
+                className={`rounded-2xl bg-[#1D1D1D] border transition-all p-4 flex flex-col justify-between gap-3.5 ${
+                  isActive ? 'border-[#FF2525] bg-gradient-to-b from-[#1D1D1D] to-[#141414]' : 'border-[#454545]/90'
                 }`}
               >
                 {/* Top Row: Icon, Name, Status Badge & ON/OFF Switch */}
@@ -685,25 +685,25 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                         </h3>
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           {isActive ? (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#FF2525]/20 text-[#F5F5F5] border border-[#C5C5C5]/60">
                               {globalEnabled ? '● ACTIVE' : '● ENABLED (MASTER OFF)'}
                             </span>
                           ) : fest.manual_off_override ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF762E]/20 text-[#FF762E] border border-[#FF762E]/50">
                               MANUAL OFF
                             </span>
                           ) : hasSchedule ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF2525]/20 text-[#FF2525] border border-[#FF2525]/30">
                               SCHEDULED
                             </span>
                           ) : (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1D1D1D] text-[#929292]">
                               INACTIVE
                             </span>
                           )}
 
                           {customAssetCount > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF2525]/20 text-[#FF2525] border border-[#FF2525]/30">
                               {customAssetCount} Custom Asset{customAssetCount > 1 ? 's' : ''}
                             </span>
                           )}
@@ -718,7 +718,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       onClick={() => handleRequestToggleFestival(fest, !isActive, false)}
                       title={isActive ? `Turn OFF ${fest.name}` : `Activate ${fest.name}`}
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                        isActive ? 'bg-emerald-600' : 'bg-slate-700 hover:bg-slate-600'
+                        isActive ? 'bg-[#FF2525]' : 'bg-[#2A2A2A] hover:bg-slate-600'
                       } ${isToggling ? 'opacity-50' : ''}`}
                     >
                       <span
@@ -730,13 +730,13 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   </div>
 
                   {/* Description & Greeting */}
-                  <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-[#929292] line-clamp-2 leading-relaxed">
                     {fest.tagline}
                   </p>
 
-                  <div className="p-2.5 rounded-xl bg-[#080D19] border border-slate-800/80 space-y-1.5 text-[11px]">
+                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#454545]/80 space-y-1.5 text-[11px]">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400 font-semibold">Banner:</span>
+                      <span className="text-[#929292] font-semibold">Banner:</span>
                       <span
                         style={{ color: fest.secondary_accent }}
                         className="font-bold truncate max-w-[180px]"
@@ -745,21 +745,21 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400 font-semibold">Screens:</span>
-                      <span className="text-slate-200 font-bold uppercase text-[10px]">
+                      <span className="text-[#929292] font-semibold">Screens:</span>
+                      <span className="text-[#F5F5F5] font-bold uppercase text-[10px]">
                         {fest.target_screens.join(' • ')}
                       </span>
                     </div>
                     {hasSchedule && (
-                      <div className="pt-1 border-t border-slate-800/80 space-y-0.5 text-[10px]">
+                      <div className="pt-1 border-t border-[#454545]/80 space-y-0.5 text-[10px]">
                         {fest.start_at && (
-                          <div className="flex items-center justify-between text-indigo-300">
+                          <div className="flex items-center justify-between text-[#FF2525]">
                             <span>Starts:</span>
                             <span className="font-mono">{formatIstScheduleLabel(fest.start_at)}</span>
                           </div>
                         )}
                         {fest.end_at && (
-                          <div className="flex items-center justify-between text-amber-300">
+                          <div className="flex items-center justify-between text-[#FF762E]">
                             <span>Ends:</span>
                             <span className="font-mono">{formatIstScheduleLabel(fest.end_at)}</span>
                           </div>
@@ -778,20 +778,20 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                     }
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-colors ${
                       isPreviewing
-                        ? 'bg-indigo-600 border-indigo-500 text-white'
-                        : 'bg-[#080D19] hover:bg-slate-800 border-slate-700/80 text-slate-200'
+                        ? 'bg-[#FF2525] border-[#FF2525]/50 text-white'
+                        : 'bg-[#141414] hover:bg-[#1D1D1D] border-[#454545]/80 text-[#F5F5F5]'
                     }`}
                   >
-                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                    <Eye className="w-3.5 h-3.5 text-[#FF2525]" />
                     <span>{isPreviewing ? 'Previewing' : 'Preview'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleOpenConfigModal(fest)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                    className="flex-1 py-2 px-3 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] border border-[#454545] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                   >
-                    <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                    <Sliders className="w-3.5 h-3.5 text-[#FF762E]" />
                     <span>Configure</span>
                   </button>
                 </div>
@@ -806,10 +806,10 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
        * ========================================================================== */}
       {replaceConfirmation && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0C1222] border border-amber-500/40 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+          <div className="bg-[#1D1D1D] border border-[#FF762E]/50 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <AlertCircle className="w-5 h-5 text-[#FF762E]" />
                 <h3 className="text-sm font-extrabold text-white">
                   Replace Currently Active Festival?
                 </h3>
@@ -817,23 +817,23 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setReplaceConfirmation(null)}
-                className="text-slate-400 hover:text-white"
+                className="text-[#929292] hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-[#080D19] border border-slate-800 space-y-2.5 text-xs">
-              <p className="text-slate-200 leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-[#141414] border border-[#454545] space-y-2.5 text-xs">
+              <p className="text-[#F5F5F5] leading-relaxed">
                 Only one festival decoration can be active at a time.{' '}
-                <strong className="text-amber-300">
+                <strong className="text-[#FF762E]">
                   {replaceConfirmation.currentActive.name} {replaceConfirmation.currentActive.icon}
                 </strong>{' '}
                 is currently active.
               </p>
-              <p className="text-slate-300 leading-relaxed">
+              <p className="text-[#C5C5C5] leading-relaxed">
                 Activating{' '}
-                <strong className="text-emerald-300">
+                <strong className="text-[#F5F5F5]">
                   {replaceConfirmation.targetFestival.name} {replaceConfirmation.targetFestival.icon}
                 </strong>{' '}
                 will automatically deactivate{' '}
@@ -845,7 +845,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setReplaceConfirmation(null)}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+                className="px-3.5 py-2 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#F5F5F5] text-xs font-bold"
               >
                 Cancel
               </button>
@@ -872,16 +872,16 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
        * ========================================================================== */}
       {editingFestival && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-[#0C1222] border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto">
+          <div className="bg-[#1D1D1D] border border-[#454545] rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl my-auto">
             {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0">
+            <div className="px-5 py-4 border-b border-[#454545] flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="text-2xl">{editingFestival.icon}</span>
                 <div className="min-w-0">
                   <h3 className="text-sm sm:text-base font-extrabold text-white truncate">
                     Configure {editingFestival.name}
                   </h3>
-                  <p className="text-[11px] text-slate-400 truncate">{editingFestival.tagline}</p>
+                  <p className="text-[11px] text-[#929292] truncate">{editingFestival.tagline}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -893,7 +893,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       is_enabled: true,
                     })
                   }
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-[#FF2525]/20 hover:bg-[#FF2525]/30 border border-[#FF2525]/40 text-[#FF2525] text-xs font-bold flex items-center gap-1.5"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Live Preview</span>
@@ -901,7 +901,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingFestival(null)}
-                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  className="p-1.5 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#C5C5C5]"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -911,17 +911,17 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
             {/* Modal Form Body */}
             <form onSubmit={handleSaveConfig} className="p-5 space-y-5 overflow-y-auto text-xs flex-1">
               {configError && (
-                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-700 text-rose-200 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-[#FF2525]/15 border border-[#FF2525]/55 text-[#FF2525] flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-[#FF2525] shrink-0" />
                   <span>{configError}</span>
                 </div>
               )}
 
               {/* 1. GREETING BANNER TEXT & SUBTITLE */}
-              <div className="p-4 rounded-2xl bg-[#080D19] border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#141414] border border-[#454545] space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF762E]" />
                     <span>1. Festive Greeting Banner</span>
                   </h4>
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -931,15 +931,15 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       onChange={(e) =>
                         setEditingFestival({ ...editingFestival, banner_enabled: e.target.checked })
                       }
-                      className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                      className="rounded border-[#454545] accent-[#FF2525] focus:ring-[#FF2525]/40"
                     />
-                    <span className="text-slate-300 font-bold">Show Greeting Banner</span>
+                    <span className="text-[#C5C5C5] font-bold">Show Greeting Banner</span>
                   </label>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-[#929292] mb-1">
                       Greeting Title (Max 100 chars)
                     </label>
                     <input
@@ -949,12 +949,12 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       onChange={(e) =>
                         setEditingFestival({ ...editingFestival, banner_text: e.target.value })
                       }
-                      className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold"
+                      className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-3 py-2 text-white font-semibold"
                       placeholder="e.g. Happy Diwali"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-[#929292] mb-1">
                       Optional Greeting Subtitle (Max 180 chars)
                     </label>
                     <input
@@ -964,7 +964,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       onChange={(e) =>
                         setEditingFestival({ ...editingFestival, banner_subtitle: e.target.value })
                       }
-                      className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                      className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-3 py-2 text-white"
                       placeholder="Optional festive wish for students"
                     />
                   </div>
@@ -973,9 +973,9 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
 
               {/* 2. DECORATION LAYER TOGGLES & TARGET SCREENS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="p-4 rounded-2xl bg-[#080D19] border border-slate-800 space-y-2.5">
+                <div className="p-4 rounded-2xl bg-[#141414] border border-[#454545] space-y-2.5">
                   <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                    <Layers className="w-3.5 h-3.5 text-[#FF2525]" />
                     <span>2. Decoration Layers</span>
                   </h4>
                   {(
@@ -991,7 +991,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       key={layer.key}
                       className="flex items-center justify-between py-1 cursor-pointer"
                     >
-                      <span className="text-slate-300 font-medium">{layer.label}</span>
+                      <span className="text-[#C5C5C5] font-medium">{layer.label}</span>
                       <input
                         type="checkbox"
                         checked={Boolean(editingFestival[layer.key])}
@@ -1001,21 +1001,21 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             [layer.key]: e.target.checked,
                           })
                         }
-                        className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-[#454545] accent-[#FF2525] focus:ring-[#FF2525]/40"
                       />
                     </label>
                   ))}
                 </div>
 
                 {/* Target Screens & Intensity */}
-                <div className="p-4 rounded-2xl bg-[#080D19] border border-slate-800 space-y-3">
+                <div className="p-4 rounded-2xl bg-[#141414] border border-[#454545] space-y-3">
                   <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+                    <Sliders className="w-3.5 h-3.5 text-[#F5F5F5]" />
                     <span>3. Target Screens & Intensity</span>
                   </h4>
 
                   <div>
-                    <p className="text-[11px] text-slate-400 font-semibold mb-1.5">
+                    <p className="text-[11px] text-[#929292] font-semibold mb-1.5">
                       Display Decoration On:
                     </p>
                     <div className="flex items-center gap-2">
@@ -1028,8 +1028,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             onClick={() => handleToggleTargetScreen(scr)}
                             className={`flex-1 py-1.5 px-2.5 rounded-xl font-bold uppercase text-[11px] border transition-colors ${
                               checked
-                                ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                                : 'bg-[#0C1222] border-slate-800 text-slate-500'
+                                ? 'bg-[#FF2525]/30 border-[#FF2525]/50 text-white'
+                                : 'bg-[#1D1D1D] border-[#454545] text-[#929292]'
                             }`}
                           >
                             {checked ? '✓ ' : ''}
@@ -1042,7 +1042,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
 
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                      <label className="block text-[10px] font-bold text-[#929292] mb-1">
                         Animation Speed
                       </label>
                       <select
@@ -1053,7 +1053,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             animation_speed: e.target.value as FestivalAnimationSpeed,
                           })
                         }
-                        className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-2.5 py-1.5 text-white font-semibold"
+                        className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-2.5 py-1.5 text-white font-semibold"
                       >
                         <option value="slow">Slow & Gentle</option>
                         <option value="normal">Normal</option>
@@ -1061,7 +1061,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                      <label className="block text-[10px] font-bold text-[#929292] mb-1">
                         Ornament Size
                       </label>
                       <select
@@ -1072,7 +1072,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             decoration_size: e.target.value as FestivalDecorationSize,
                           })
                         }
-                        className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-2.5 py-1.5 text-white font-semibold"
+                        className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-2.5 py-1.5 text-white font-semibold"
                       >
                         <option value="small">Compact (Small)</option>
                         <option value="medium">Balanced (Medium)</option>
@@ -1082,9 +1082,9 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   </div>
 
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-[#929292] mb-1">
                         <span>Decoration Opacity</span>
-                        <span className="text-amber-300">{Math.round(editingFestival.opacity * 100)}%</span>
+                        <span className="text-[#FF762E]">{Math.round(editingFestival.opacity * 100)}%</span>
                       </div>
                       <input
                         type="range"
@@ -1098,26 +1098,26 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             opacity: Number(e.target.value),
                           })
                         }
-                        className="w-full accent-indigo-500"
+                        className="w-full accent-[#FF2525]"
                       />
                     </div>
                   </div>
                 </div>
 
               {/* 3B. FLOATING FESTIVAL PARTICLES (FESTIVAL-SPECIFIC ANIMATION CONFIGURATION) */}
-              <div className="p-4 rounded-2xl bg-[#080D19] border border-amber-500/30 space-y-3.5">
+              <div className="p-4 rounded-2xl bg-[#141414] border border-[#FF762E]/50 space-y-3.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <Sparkles className="w-3.5 h-3.5 text-[#FF762E]" />
                       <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px]">
                         Floating Festival Particles ({editingFestival.name} {editingFestival.icon})
                       </h4>
                       <span
                         className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
                           editingFestival.floating_enabled && editingFestival.animation_enabled
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                            ? 'bg-[#FF2525]/20 text-[#F5F5F5] border-[#C5C5C5]/60'
+                            : 'bg-[#1D1D1D] text-[#929292] border-[#454545]'
                         }`}
                       >
                         {editingFestival.floating_enabled && editingFestival.animation_enabled
@@ -1131,7 +1131,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   </div>
 
                   {/* Enable / Disable Floating Festival Particle Animation */}
-                  <label className="flex items-center gap-2 cursor-pointer shrink-0 bg-[#0C1222] px-3 py-1.5 rounded-xl border border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer shrink-0 bg-[#1D1D1D] px-3 py-1.5 rounded-xl border border-[#454545]">
                     <input
                       type="checkbox"
                       checked={Boolean(editingFestival.floating_enabled && editingFestival.animation_enabled)}
@@ -1142,9 +1142,9 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                           ...(e.target.checked ? { animation_enabled: true } : {}),
                         })
                       }
-                      className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+                      className="rounded border-[#454545] text-[#FF762E] focus:ring-amber-500"
                     />
-                    <span className="text-slate-200 font-bold text-[11px]">
+                    <span className="text-[#F5F5F5] font-bold text-[11px]">
                       Enable Floating Animation
                     </span>
                   </label>
@@ -1153,8 +1153,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                 {/* Controls Grid: Intensity, Size, Speed, Density */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Animation Intensity: Low / Medium / High */}
-                  <div className="p-2.5 rounded-xl bg-[#0C1222] border border-slate-800 space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400">
+                  <div className="p-2.5 rounded-xl bg-[#1D1D1D] border border-[#454545] space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#929292]">
                       Animation Intensity
                     </label>
                     <div className="grid grid-cols-3 gap-1">
@@ -1172,8 +1172,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             }
                             className={`py-1.5 px-2 rounded-lg font-extrabold uppercase text-[10px] border transition-colors ${
                               active
-                                ? 'bg-amber-500/25 border-amber-400 text-amber-200'
-                                : 'bg-[#080D19] border-slate-800 text-slate-400 hover:text-slate-200'
+                                ? 'bg-[#FF762E]/25 border-[#FF762E]/50 text-amber-200'
+                                : 'bg-[#141414] border-[#454545] text-[#929292] hover:text-[#F5F5F5]'
                             }`}
                           >
                             {lvl}
@@ -1184,8 +1184,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   </div>
 
                   {/* Particle Size: Small / Normal */}
-                  <div className="p-2.5 rounded-xl bg-[#0C1222] border border-slate-800 space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400">
+                  <div className="p-2.5 rounded-xl bg-[#1D1D1D] border border-[#454545] space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#929292]">
                       Particle Size
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -1203,8 +1203,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             }
                             className={`py-1.5 px-2 rounded-lg font-extrabold uppercase text-[10px] border transition-colors ${
                               active
-                                ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200'
-                                : 'bg-[#080D19] border-slate-800 text-slate-400 hover:text-slate-200'
+                                ? 'bg-[#FF2525]/30 border-[#FF2525]/50 text-[#FF2525]'
+                                : 'bg-[#141414] border-[#454545] text-[#929292] hover:text-[#F5F5F5]'
                             }`}
                           >
                             {sz}
@@ -1215,8 +1215,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                   </div>
 
                   {/* Animation Speed: Slow / Normal / Fast */}
-                  <div className="p-2.5 rounded-xl bg-[#0C1222] border border-slate-800 space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400">
+                  <div className="p-2.5 rounded-xl bg-[#1D1D1D] border border-[#454545] space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#929292]">
                       Animation Speed
                     </label>
                     <div className="grid grid-cols-3 gap-1">
@@ -1236,8 +1236,8 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                             }
                             className={`py-1.5 px-2 rounded-lg font-extrabold uppercase text-[10px] border transition-colors ${
                               active
-                                ? 'bg-emerald-600/25 border-emerald-400 text-emerald-200'
-                                : 'bg-[#080D19] border-slate-800 text-slate-400 hover:text-slate-200'
+                                ? 'bg-[#FF2525]/25 border-[#C5C5C5]/60 text-[#F5F5F5]'
+                                : 'bg-[#141414] border-[#454545] text-[#929292] hover:text-[#F5F5F5]'
                             }`}
                           >
                             {spd}
@@ -1249,11 +1249,11 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                 </div>
 
                 {/* Particle Density Slider + Live Preview & Reset Particle Default Buttons */}
-                <div className="p-3 rounded-xl bg-[#0C1222] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-3 rounded-xl bg-[#1D1D1D] border border-[#454545] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-[#929292]">
                       <span>Particle Density (Lightweight Screen Balance)</span>
-                      <span className="text-amber-300 font-mono">
+                      <span className="text-[#FF762E] font-mono">
                         {editingFestival.particle_density ?? 14} Particles
                       </span>
                     </div>
@@ -1284,19 +1284,19 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                           animation_enabled: true,
                         })
                       }
-                      className="px-3 py-1.5 rounded-xl bg-indigo-600/25 hover:bg-indigo-600/40 border border-indigo-500/50 text-indigo-200 text-[11px] font-bold flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl bg-[#FF2525]/25 hover:bg-[#FF2525]/40 border border-[#FF2525]/50 text-[#FF2525] text-[11px] font-bold flex items-center gap-1.5"
                     >
-                      <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                      <Eye className="w-3.5 h-3.5 text-[#FF2525]" />
                       <span>Live Preview</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={handleResetParticleDefault}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] border border-[#454545] text-[#F5F5F5] text-[11px] font-bold flex items-center gap-1.5"
                       title="Reset floating particle animation settings to this festival's default"
                     >
-                      <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                      <RotateCcw className="w-3.5 h-3.5 text-[#FF762E]" />
                       <span>Reset Particle Default</span>
                     </button>
                   </div>
@@ -1304,14 +1304,14 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               </div>
 
               {/* 4. AUTOMATIC IST SCHEDULING */}
-              <div className="p-4 rounded-2xl bg-[#080D19] border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#141414] border border-[#454545] space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                      <Calendar className="w-3.5 h-3.5 text-[#FF2525]" />
                       <span>4. Optional Automatic Schedule (IST – Asia/Kolkata)</span>
                     </h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-[10px] text-[#929292] mt-0.5">
                       Automatically activates at Start Date/Time and deactivates at End Date/Time on the server without needing an admin logged in.
                     </p>
                   </div>
@@ -1322,7 +1322,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                         setStartIstInput('');
                         setEndIstInput('');
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold"
+                      className="px-2.5 py-1 rounded-lg bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#C5C5C5] text-[10px] font-bold"
                     >
                       Clear Schedule
                     </button>
@@ -1331,41 +1331,41 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-indigo-400" />
+                    <label className="block text-[11px] font-bold text-[#929292] mb-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#FF2525]" />
                       <span>Start Date & Time (IST)</span>
                     </label>
                     <input
                       type="datetime-local"
                       value={startIstInput}
                       onChange={(e) => setStartIstInput(e.target.value)}
-                      className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                      className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-3 py-2 text-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-amber-400" />
+                    <label className="block text-[11px] font-bold text-[#929292] mb-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#FF762E]" />
                       <span>End Date & Time (IST)</span>
                     </label>
                     <input
                       type="datetime-local"
                       value={endIstInput}
                       onChange={(e) => setEndIstInput(e.target.value)}
-                      className="w-full bg-[#0C1222] border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                      className="w-full bg-[#1D1D1D] border border-[#454545] rounded-xl px-3 py-2 text-white font-mono"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 5. CUSTOM DECORATION ASSET UPLOADS (WITH DEFAULT ARTWORK FALLBACK) */}
-              <div className="p-4 rounded-2xl bg-[#080D19] border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#141414] border border-[#454545] space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h4 className="font-extrabold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+                      <ImageIcon className="w-3.5 h-3.5 text-[#FF2525]" />
                       <span>5. Custom Festival Assets (Optional)</span>
                     </h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-[10px] text-[#929292] mt-0.5">
                       Each festival already includes built-in multi-layered SVG artwork. Upload custom PNG, SVG, WebP, or JPG (up to 5MB) to override specific slots.
                     </p>
                   </div>
@@ -1379,25 +1379,25 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                     return (
                       <div
                         key={slot.key}
-                        className="p-3 rounded-xl bg-[#0C1222] border border-slate-800 flex flex-col justify-between gap-2"
+                        className="p-3 rounded-xl bg-[#1D1D1D] border border-[#454545] flex flex-col justify-between gap-2"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="font-bold text-white text-[11px] truncate">{slot.label}</p>
-                            <p className="text-[10px] text-slate-400 line-clamp-1">{slot.hint}</p>
+                            <p className="text-[10px] text-[#929292] line-clamp-1">{slot.hint}</p>
                           </div>
                           {currentUrl && (
                             <img
                               src={currentUrl}
                               alt={slot.label}
-                              className="w-9 h-9 rounded-lg object-contain bg-slate-900 border border-slate-700 p-0.5 shrink-0"
+                              className="w-9 h-9 rounded-lg object-contain bg-[#141414] border border-[#454545] p-0.5 shrink-0"
                             />
                           )}
                         </div>
 
                         <div className="flex items-center gap-1.5 pt-1">
-                          <label className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors">
-                            <Upload className="w-3 h-3 text-indigo-400" />
+                          <label className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#F5F5F5] text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors">
+                            <Upload className="w-3 h-3 text-[#FF2525]" />
                             <span>
                               {isUploading
                                 ? 'Uploading...'
@@ -1426,7 +1426,7 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                                   },
                                 })
                               }
-                              className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/50 text-rose-300"
+                              className="p-1.5 rounded-lg bg-[#FF2525]/15 hover:bg-[#FF2525]/15 border border-[#FF2525]/55 text-[#FF2525]"
                               title="Remove custom image and restore default SVG artwork"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1440,14 +1440,14 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#454545]">
                 <button
                   type="button"
                   disabled={resettingId === editingFestival.id || savingConfig}
                   onClick={() => handleResetToDefault(editingFestival)}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#C5C5C5] text-xs font-bold flex items-center gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  <RotateCcw className="w-3.5 h-3.5 text-[#FF762E]" />
                   <span>Reset to Default</span>
                 </button>
 
@@ -1456,14 +1456,14 @@ export const FestivalManagerSection: React.FC<FestivalManagerSectionProps> = ({
                     type="button"
                     disabled={savingConfig}
                     onClick={() => setEditingFestival(null)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+                    className="px-3.5 py-2 rounded-xl bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#F5F5F5] text-xs font-bold"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingConfig || Boolean(uploadingSlot)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF2525] to-[#C90000] hover:from-[#FF2525] hover:to-[#C90000] text-white text-xs font-extrabold flex items-center gap-1.5 shadow-lg"
                   >
                     <Check className="w-4 h-4" />
                     <span>{savingConfig ? 'Saving...' : 'Save Configuration'}</span>

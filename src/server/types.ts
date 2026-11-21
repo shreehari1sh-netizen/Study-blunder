@@ -60,6 +60,8 @@ export interface User {
   role: UserRole;
   vip_active: boolean;
   vip_expires_at: string | null;
+  vip_allowed_platform_ids?: string[];
+  vip_platform_expiries?: Record<string, string>;
   vip_grace_until?: string | null;
   free_access_expires_at?: string | null;
   is_blocked?: boolean;
@@ -94,6 +96,8 @@ export interface UserPublicProfile {
   role: UserRole;
   vip_active: boolean;
   vip_expires_at: string | null;
+  vip_allowed_platform_ids?: string[];
+  vip_platform_expiries?: Record<string, string>;
   vip_grace_until?: string | null;
   vip_membership_state?: 'active' | 'expiring_soon' | 'grace_period' | 'expired' | 'none';
   free_access_expires_at?: string | null;
@@ -158,6 +162,7 @@ export interface VipBatch {
 export interface VipPlan {
   id: string;
   title: string;
+  plan_scope?: 'single_platform' | 'all_platforms';
   price_inr: number;
   original_price_inr?: number;
   duration_days: number;
@@ -183,11 +188,17 @@ export type PopupFrequency =
 
 export type CustomPopupFrequency = PopupFrequency;
 
+export type AppThemePreset = 'red' | 'yellow' | 'pale_white_pink' | 'blue' | 'emerald';
+
 export interface AppSettings {
   key_generation_enabled: boolean;
   shortener_url: string;
   tutorial_video_url: string;
   telegram_channel_url: string;
+  study_blunder_telegram_url?: string;
+  study_blunder_telegram_label?: string;
+  study_fox_telegram_url?: string;
+  study_fox_telegram_label?: string;
   telegram_popup_enabled: boolean;
   telegram_popup_title?: string;
   telegram_popup_message?: string;
@@ -207,12 +218,23 @@ export interface AppSettings {
   vip_payment_amount?: number;
   vip_payment_instructions?: string;
   vip_payment_utr_required?: boolean;
+  home_single_vip_label?: string;
+  home_single_vip_price?: number;
+  home_single_vip_duration_days?: number;
+  home_single_vip_destination?: 'in_app_single_vip' | 'custom_url';
+  home_single_vip_url?: string;
+  home_all_vip_label?: string;
+  home_all_vip_price?: number;
+  home_all_vip_duration_days?: number;
+  home_all_vip_destination?: 'in_app_all_vip' | 'custom_url';
+  home_all_vip_url?: string;
   vip_grace_period_hours?: number;
   referral_reward_days?: number;
   referral_program_enabled?: boolean;
   referral_discount_config?: ReferralDiscountConfig;
   app_name?: string;
   app_logo_url?: string;
+  app_theme_preset?: AppThemePreset;
   theme_primary?: string;
   theme_secondary?: string;
   theme_background?: string;
@@ -298,6 +320,9 @@ export interface PaymentRecord {
   submitted_email?: string;
   plan_id: string;
   plan_title: string;
+  vip_scope?: 'all_platforms' | 'single_platform';
+  selected_platform_id?: string | null;
+  selected_platform_name?: string | null;
   plan_duration_days?: number;
   bonus_days_applied?: number;
   original_plan_price?: number;
@@ -457,4 +482,109 @@ export interface PlatformUsageHistoryResponse {
     total_pages: number;
   };
 }
+
+export interface StudentExamTimer {
+  user_id: string;
+  exam_name: string;
+  exam_datetime: string;
+  updated_at: string;
+}
+
+export interface OfferBoardItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  image_url: string;
+  link_url?: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyMotivationItem {
+  day_number: number; // 1 to 30
+  quote: string;
+  author?: string;
+  image_url?: string;
+  updated_at?: string;
+}
+
+export interface StudentXpRecord {
+  user_id: string;
+  xp_total: number;
+  weekly_xp: number;
+  weekly_key: string;
+  daily_streak: number;
+  last_login_date: string | null;
+  total_login_days: number;
+  updated_at: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  display_name: string;
+  xp_total: number;
+  daily_streak: number;
+  total_login_days: number;
+  is_vip: boolean;
+  is_me?: boolean;
+}
+
+export interface LeaderboardResponse {
+  top_students: LeaderboardEntry[];
+  my_rank: number | null;
+  my_xp: number;
+  my_streak: number;
+  daily_xp_claimed_today: boolean;
+  daily_xp_awarded_now?: number;
+  total_ranked_students: number;
+  today_ist: string;
+}
+
+export interface StudentStudyLog {
+  id: string;
+  user_id: string;
+  minutes: number;
+  source: 'timer' | 'manual' | 'platform';
+  note?: string;
+  logged_at: string;
+  date_ist: string;
+}
+
+export interface ParentReportSettings {
+  user_id: string;
+  parent_name: string;
+  parent_whatsapp: string;
+  parent_email?: string;
+  auto_sunday_enabled: boolean;
+  updated_at: string;
+}
+
+export interface ParentsReportCardData {
+  student_name: string;
+  student_email: string;
+  week_start_ist: string;
+  week_end_ist: string;
+  is_sunday_ist: boolean;
+  next_sunday_ist: string;
+  study_minutes_week: number;
+  study_hours_week: number;
+  study_sessions_count: number;
+  quizzes_taken_week: number;
+  quiz_marks_obtained: number;
+  quiz_total_marks: number;
+  quiz_avg_percentage: number;
+  leaderboard_rank: number | null;
+  total_ranked_students: number;
+  total_xp: number;
+  weekly_xp: number;
+  daily_streak: number;
+  parent_settings: ParentReportSettings;
+  recent_study_logs: StudentStudyLog[];
+  share_text: string;
+  whatsapp_url: string;
+}
+
 

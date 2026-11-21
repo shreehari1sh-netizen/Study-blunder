@@ -17,6 +17,7 @@ import type {
 } from './types.ts';
 import { CheckCircle2 } from 'lucide-react';
 import { api, getStoredToken, removeStoredToken } from './api.ts';
+import { getThemePresetDefinition } from './constants/themes.ts';
 import { TopHeader } from './components/TopHeader.tsx';
 import { BottomNav } from './components/BottomNav.tsx';
 import { HomeSection } from './components/HomeSection.tsx';
@@ -100,6 +101,25 @@ export default function App() {
   const [activeFestivalState, setActiveFestivalState] = useState<ActiveFestivalResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState<boolean>(() => Boolean(getStoredToken()));
+  const [colorMode, setColorMode] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('sb_color_mode');
+      return saved === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+  const toggleColorMode = useCallback(() => {
+    setColorMode((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem('sb_color_mode', next);
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  }, []);
   const serverTimeOffsetRef = useRef<number>(0);
   const [now, setNow] = useState<number>(() => Date.now());
 
@@ -120,6 +140,11 @@ export default function App() {
   const [showKeyGenModal, setShowKeyGenModal] = useState(false);
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [showCustomPopupModal, setShowCustomPopupModal] = useState(false);
+  const [vipIntent, setVipIntent] = useState<{
+    mode: 'single_platform' | 'all_platforms';
+    platformId?: string | null;
+    nonce: number;
+  } | null>(null);
 
   const prevAccessStateRef = useRef<{ userId: string; valid: boolean; tab: TabType } | null>(null);
   const isInitialTabMount = useRef(true);
@@ -265,7 +290,27 @@ export default function App() {
     }
   };
 
-  // Load public data
+  const settingsUpdatedAtRef = useRef<number>(0);
+
+  const applyFreshSettings = useCallback((incoming: PublicSettings | null | undefined) => {
+    if (!incoming || typeof incoming !== 'object') return;
+    const incomingTs = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
+    if (
+      Number.isFinite(incomingTs) &&
+      incomingTs > 0 &&
+      settingsUpdatedAtRef.current > 0 &&
+      incomingTs < settingsUpdatedAtRef.current
+    ) {
+      // Never overwrite newer database settings with stale data
+      return;
+    }
+    if (Number.isFinite(incomingTs) && incomingTs > 0) {
+      settingsUpdatedAtRef.current = incomingTs;
+    }
+    setSettings(incoming);
+  }, []);
+
+  // Load all public configuration on initial boot or full manual refresh
   const loadPublicData = useCallback(async () => {
     try {
       setLoading(true);
@@ -278,41 +323,51 @@ export default function App() {
         api.getActiveFestival(),
       ]);
       const [sett, plats, bat, plns, anns, fest] = results;
-      if (sett.status === 'fulfilled') setSettings(sett.value);
+      if (sett.status === 'fulfilled') applyFreshSettings(sett.value);
       if (plats.status === 'fulfilled') setPlatforms(plats.value);
       if (bat.status === 'fulfilled') setBatches(bat.value);
       if (plns.status === 'fulfilled') setPlans(plns.value);
       if (anns.status === 'fulfilled') setAnnouncements(anns.value);
       if (fest.status === 'fulfilled') setActiveFestivalState(fest.value);
     } catch {
-      // Gracefully maintain existing cache
+      // Gracefully maintain existing state on temporary network failure
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyFreshSettings]);
 
-  const lastPlansRefreshAtRef = useRef<number>(0);
+  const lastConfigRefreshAtRef = useRef<number>(0);
 
-  // Refresh authoritative VIP plans & settings without showing full-page loading spinner
-  const refreshPlansAndSettings = useCallback(async (force = false) => {
-    const nowTs = Date.now();
-    if (!force && nowTs - lastPlansRefreshAtRef.current < 15000) {
-      return;
-    }
-    lastPlansRefreshAtRef.current = nowTs;
-    try {
-      const [sett, plns, fest] = await Promise.all([
-        api.getSettings(),
-        api.getVipPlans(),
-        api.getActiveFestival().catch(() => null),
-      ]);
-      setSettings(sett);
-      setPlans(plns);
-      if (fest) setActiveFestivalState(fest);
-    } catch {
-      // Silently fall back to cached settings and plans on temporary network hiccups
-    }
-  }, []);
+  // Silent single-source-of-truth config refresh (settings + platforms + batches + plans + announcements + festival)
+  const refreshAllPublicConfig = useCallback(
+    async (force = false) => {
+      const nowTs = Date.now();
+      if (!force && nowTs - lastConfigRefreshAtRef.current < 2500) {
+        return;
+      }
+      lastConfigRefreshAtRef.current = nowTs;
+      try {
+        const results = await Promise.allSettled([
+          api.getSettings(),
+          api.getPlatforms(),
+          api.getVipBatches(),
+          api.getVipPlans(),
+          api.getAnnouncements(),
+          api.getActiveFestival(),
+        ]);
+        const [sett, plats, bat, plns, anns, fest] = results;
+        if (sett.status === 'fulfilled') applyFreshSettings(sett.value);
+        if (plats.status === 'fulfilled') setPlatforms(plats.value);
+        if (bat.status === 'fulfilled') setBatches(bat.value);
+        if (plns.status === 'fulfilled') setPlans(plns.value);
+        if (anns.status === 'fulfilled') setAnnouncements(anns.value);
+        if (fest.status === 'fulfilled') setActiveFestivalState(fest.value);
+      } catch {
+        // Safely retain last known valid config on temporary network failures
+      }
+    },
+    [applyFreshSettings]
+  );
 
   // Check existing session and refresh authoritative access state from server
   const checkAuth = useCallback(
@@ -349,12 +404,76 @@ export default function App() {
     checkAuth(true);
   }, [loadPublicData, checkAuth]);
 
-  // Real-time Server-Sent Events (SSE) subscription for instant Festival Decoration & VIP Status updates
+  // Real-time Server-Sent Events (SSE) subscription for instant Admin -> APK synchronization
   useEffect(() => {
     if (typeof window === 'undefined' || typeof EventSource === 'undefined') return;
     let es: EventSource | null = null;
     try {
       es = new EventSource('/api/festivals/stream');
+
+      const handleSettingsEvent = (ev: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(ev.data) as PublicSettings;
+          if (parsed && typeof parsed === 'object') {
+            applyFreshSettings(parsed);
+          }
+        } catch {
+          void refreshAllPublicConfig(true);
+        }
+      };
+
+      const handlePlatformsEvent = (ev: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (Array.isArray(parsed)) {
+            setPlatforms(parsed);
+          } else {
+            void refreshAllPublicConfig(true);
+          }
+        } catch {
+          void refreshAllPublicConfig(true);
+        }
+      };
+
+      const handleAnnouncementsEvent = (ev: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (Array.isArray(parsed)) {
+            setAnnouncements(parsed);
+          } else {
+            void refreshAllPublicConfig(true);
+          }
+        } catch {
+          void refreshAllPublicConfig(true);
+        }
+      };
+
+      const handleVipPlansEvent = (ev: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (Array.isArray(parsed)) {
+            setPlans(parsed);
+          } else {
+            void refreshAllPublicConfig(true);
+          }
+        } catch {
+          void refreshAllPublicConfig(true);
+        }
+      };
+
+      const handleVipBatchesEvent = (ev: MessageEvent) => {
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (Array.isArray(parsed)) {
+            setBatches(parsed);
+          } else {
+            void refreshAllPublicConfig(true);
+          }
+        } catch {
+          void refreshAllPublicConfig(true);
+        }
+      };
+
       const handleFestivalEvent = (ev: MessageEvent) => {
         try {
           const parsed = JSON.parse(ev.data) as ActiveFestivalResponse;
@@ -365,47 +484,54 @@ export default function App() {
           // Ignore malformed event payload
         }
       };
+
       const handleVipStatusEvent = () => {
         if (getStoredToken()) {
           void checkAuth(false);
         }
-        void refreshPlansAndSettings(true);
+        void refreshAllPublicConfig(true);
         window.dispatchEvent(new CustomEvent('sf:vip-status-update'));
       };
+
+      es.addEventListener('settings_update', handleSettingsEvent as EventListener);
+      es.addEventListener('platforms_update', handlePlatformsEvent as EventListener);
+      es.addEventListener('announcements_update', handleAnnouncementsEvent as EventListener);
+      es.addEventListener('vip_plans_update', handleVipPlansEvent as EventListener);
+      es.addEventListener('vip_batches_update', handleVipBatchesEvent as EventListener);
       es.addEventListener('festival_update', handleFestivalEvent as EventListener);
       es.addEventListener('vip_status_update', handleVipStatusEvent as EventListener);
       es.addEventListener('vip_features_update', handleVipStatusEvent as EventListener);
     } catch {
-      // Fallback polling in refreshPlansAndSettings handles environments without SSE
+      // Fallback resume refresh in handleActiveSync handles environments without SSE
     }
     return () => {
       if (es) {
         es.close();
       }
     };
-  }, [checkAuth, refreshPlansAndSettings]);
+  }, [applyFreshSettings, checkAuth, refreshAllPublicConfig]);
 
-  // Refresh plans & settings whenever user switches to VIP, Home, or Profile tab (skip initial duplicate mount)
+  // Refresh public config whenever student switches tabs (debounced)
   useEffect(() => {
     if (isInitialTabMount.current) {
       isInitialTabMount.current = false;
       return;
     }
     if (currentPath !== '/admin') {
-      void refreshPlansAndSettings(false);
+      void refreshAllPublicConfig(false);
     }
-  }, [currentTab, currentPath, refreshPlansAndSettings]);
+  }, [currentTab, currentPath, refreshAllPublicConfig]);
 
-  // Periodically check auth while open and whenever the app/tab becomes active again
+  // Sync authoritative settings & auth whenever APK/tab resumes, regains focus, or reconnects online
   useEffect(() => {
-    let lastSync = Date.now();
+    let lastResumeSync = 0;
 
     const handleActiveSync = () => {
       const current = Date.now();
       setNow(current + serverTimeOffsetRef.current);
-      if (current - lastSync > 15000) {
-        lastSync = current;
-        void refreshPlansAndSettings(false);
+      if (current - lastResumeSync > 2500) {
+        lastResumeSync = current;
+        void refreshAllPublicConfig(true);
         if (getStoredToken()) {
           void checkAuth(false);
         }
@@ -419,12 +545,14 @@ export default function App() {
     };
 
     window.addEventListener('focus', handleActiveSync);
+    window.addEventListener('online', handleActiveSync);
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Lightweight background safety sync while visible (every 60s)
     const periodicSync = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        lastSync = Date.now();
-        void refreshPlansAndSettings(false);
+        lastResumeSync = Date.now();
+        void refreshAllPublicConfig(false);
         if (getStoredToken()) {
           void checkAuth(false);
         }
@@ -433,73 +561,68 @@ export default function App() {
 
     return () => {
       window.removeEventListener('focus', handleActiveSync);
+      window.removeEventListener('online', handleActiveSync);
       document.removeEventListener('visibilitychange', handleVisibility);
       clearInterval(periodicSync);
     };
-  }, [checkAuth, refreshPlansAndSettings]);
+  }, [checkAuth, refreshAllPublicConfig]);
 
   // Apply dynamic theme custom properties & document title
+  // Applies active Admin-selected theme preset (defaults to restored Old Red Theme) + Dark/Light mode
   useEffect(() => {
-    if (settings) {
-      if (settings.app_name) {
-        document.title = settings.app_name;
-      }
-      const primary = settings.theme_primary || '#6366f1';
-      const secondary = settings.theme_secondary || '#8b5cf6';
-      const bg = settings.theme_background || '#070B14';
-      const text = settings.theme_text || '#f8fafc';
-      const button = settings.theme_button || '#4f46e5';
+    const brandName = (settings?.app_name || 'STUDY BLUNDER').trim() || 'STUDY BLUNDER';
+    document.title = currentPath === '/admin' ? `${brandName} | Admin Command` : brandName;
 
-      const vipBg = settings.vip_theme_background || '#090d16';
-      const vipCard = settings.vip_theme_card || '#0f172a';
-      const vipAccent = settings.vip_theme_accent || '#f59e0b';
-      const vipText = settings.vip_theme_text || '#f8fafc';
-      const vipButton = settings.vip_theme_button || '#eab308';
-      const vipBorder = settings.vip_theme_border || '#1e293b';
+    const activeThemeDef = getThemePresetDefinition(settings?.app_theme_preset);
+    const isLight = colorMode === 'light';
 
-      document.documentElement.style.setProperty('--color-primary', primary);
-      document.documentElement.style.setProperty('--color-secondary', secondary);
-      document.documentElement.style.setProperty('--color-bg', bg);
-      document.documentElement.style.setProperty('--color-text', text);
-      document.documentElement.style.setProperty('--color-button', button);
+    document.documentElement.setAttribute('data-app-theme', activeThemeDef.id);
+    document.documentElement.setAttribute('data-theme', colorMode);
 
-      document.documentElement.style.setProperty('--vip-theme-bg', vipBg);
-      document.documentElement.style.setProperty('--vip-theme-card', vipCard);
-      document.documentElement.style.setProperty('--vip-theme-accent', vipAccent);
-      document.documentElement.style.setProperty('--vip-theme-text', vipText);
-      document.documentElement.style.setProperty('--vip-theme-button', vipButton);
-      document.documentElement.style.setProperty('--vip-theme-border', vipBorder);
+    const palette = isLight ? activeThemeDef.lightVars : activeThemeDef.darkVars;
 
-      document.body.style.backgroundColor = bg;
-      document.body.style.color = text;
+    document.documentElement.style.setProperty('--color-primary', palette.primary);
+    document.documentElement.style.setProperty('--color-secondary', palette.secondary);
+    document.documentElement.style.setProperty('--color-bg', palette.bg);
+    document.documentElement.style.setProperty('--color-text', palette.text);
+    document.documentElement.style.setProperty('--color-button', palette.button);
 
-      let styleEl = document.getElementById('custom-theme-styles') as HTMLStyleElement | null;
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'custom-theme-styles';
-        document.head.appendChild(styleEl);
-      }
-      styleEl.innerHTML = `
-        :root {
-          --theme-primary: ${primary};
-          --theme-secondary: ${secondary};
-          --theme-bg: ${bg};
-          --theme-text: ${text};
-          --theme-button: ${button};
-          --vip-theme-bg: ${vipBg};
-          --vip-theme-card: ${vipCard};
-          --vip-theme-accent: ${vipAccent};
-          --vip-theme-text: ${vipText};
-          --vip-theme-button: ${vipButton};
-          --vip-theme-border: ${vipBorder};
-        }
-        body {
-          background-color: ${bg} !important;
-          color: ${text} !important;
-        }
-      `;
+    document.documentElement.style.setProperty('--vip-theme-bg', palette.bg);
+    document.documentElement.style.setProperty('--vip-theme-card', palette.card);
+    document.documentElement.style.setProperty('--vip-theme-accent', palette.primary);
+    document.documentElement.style.setProperty('--vip-theme-text', palette.text);
+    document.documentElement.style.setProperty('--vip-theme-button', palette.button);
+    document.documentElement.style.setProperty('--vip-theme-border', palette.border);
+
+    document.body.style.backgroundColor = palette.bg;
+    document.body.style.color = palette.text;
+
+    let styleEl = document.getElementById('custom-theme-styles') as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'custom-theme-styles';
+      document.head.appendChild(styleEl);
     }
-  }, [settings]);
+    styleEl.innerHTML = `
+      :root {
+        --theme-primary: ${palette.primary};
+        --theme-secondary: ${palette.secondary};
+        --theme-bg: ${palette.bg};
+        --theme-text: ${palette.text};
+        --theme-button: ${palette.button};
+        --vip-theme-bg: ${palette.bg};
+        --vip-theme-card: ${palette.card};
+        --vip-theme-accent: ${palette.primary};
+        --vip-theme-text: ${palette.text};
+        --vip-theme-button: ${palette.button};
+        --vip-theme-border: ${palette.border};
+      }
+      body {
+        background-color: ${palette.bg} !important;
+        color: ${palette.text} !important;
+      }
+    `;
+  }, [settings, currentPath, colorMode]);
 
   // Enforce access priority & automatically detect access expiry while the app is open
   // Prevent premature redirects while user profile or settings are still loading
@@ -762,8 +885,12 @@ export default function App() {
       return (
         <React.Suspense
           fallback={
-            <div className="min-h-screen bg-[#070B14] flex items-center justify-center p-4">
-              <p className="text-xs text-slate-400 font-bold tracking-wider uppercase">Loading Admin Portal...</p>
+            <div className="min-h-screen ra-grid-bg bg-[#090909] flex items-center justify-center p-4">
+              <div className="ra-panel ra-corners px-6 py-4 rounded-xl text-center">
+                <p className="font-display text-xs text-[#F5F5F5] font-bold tracking-[0.2em] uppercase">
+                  Loading Admin Command
+                </p>
+              </div>
             </div>
           }
         >
@@ -771,7 +898,7 @@ export default function App() {
             currentUser={user}
             onClose={() => navigateTo('/')}
             onLogout={handleLogout}
-            onRefreshPublicData={loadPublicData}
+            onRefreshPublicData={() => refreshAllPublicConfig(true)}
           />
         </React.Suspense>
       );
@@ -781,8 +908,12 @@ export default function App() {
     return (
       <React.Suspense
         fallback={
-          <div className="min-h-screen bg-[#070B14] flex items-center justify-center p-4">
-            <p className="text-xs text-slate-400 font-bold tracking-wider uppercase">Loading Admin Login...</p>
+          <div className="min-h-screen ra-grid-bg bg-[#090909] flex items-center justify-center p-4">
+            <div className="ra-panel ra-corners px-6 py-4 rounded-xl text-center">
+              <p className="font-display text-xs text-[#F5F5F5] font-bold tracking-[0.2em] uppercase">
+                Loading Admin Access
+              </p>
+            </div>
           </div>
         }
       >
@@ -820,12 +951,30 @@ export default function App() {
 
   // Initial loading state while verifying existing session token or settings
   if ((loading || authChecking) && !user) {
+    const brandName = settings?.app_name || 'STUDY BLUNDER';
     return (
-      <div className="min-h-screen bg-[#070B14] flex flex-col items-center justify-center p-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#0C1222] border border-slate-800 p-1 mb-3 animate-pulse shadow-xl shadow-purple-950/40">
-          <img src="/logo.png" alt="STUDY FOX" className="w-full h-full object-contain" />
+      <div className="min-h-screen ra-grid-bg bg-[#090909] flex flex-col items-center justify-center p-6">
+        <div className="ra-corners w-18 h-18 rounded-xl bg-[#1D1D1D] border border-[#454545] p-2.5 mb-5 flex items-center justify-center overflow-hidden relative shadow-[0_0_28px_rgba(255,37,37,0.18)]">
+          <div className="ra-scan-beam absolute inset-x-0 h-5 bg-gradient-to-b from-transparent via-[#FF2525]/35 to-transparent pointer-events-none" />
+          {settings?.app_logo_url ? (
+            <img
+              src={settings.app_logo_url}
+              alt={brandName}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <span className="font-display text-xl font-black text-[#FF2525] tracking-tight">
+              {brandName.slice(0, 2).toUpperCase()}
+            </span>
+          )}
         </div>
-        <p className="text-xs text-slate-400 font-bold tracking-wider uppercase">Loading STUDY FOX...</p>
+        <p className="font-display text-sm text-[#F5F5F5] font-extrabold tracking-[0.24em] uppercase">
+          {brandName}
+        </p>
+        <div className="mt-3.5 w-36 h-1 bg-[#141414] border border-[#454545] overflow-hidden">
+          <div className="h-full w-2/5 bg-[#FF2525]" />
+        </div>
       </div>
     );
   }
@@ -851,13 +1000,7 @@ export default function App() {
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--theme-bg, #070B14)',
-        color: 'var(--theme-text, #f8fafc)',
-      }}
-      className="min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-200 relative"
-    >
+    <div className="min-h-screen flex flex-col font-body ra-grid-bg bg-[#090909] text-[#F5F5F5] transition-colors duration-200 relative overflow-x-hidden">
       {/* Non-Intrusive Festival Decoration Overlay Layer (Renders nothing when OFF or inactive) */}
       {activeFestivalState?.global_enabled !== false && activeFestivalState?.festival && (
         <React.Suspense fallback={null}>
@@ -869,11 +1012,11 @@ export default function App() {
         </React.Suspense>
       )}
 
-      {/* Key Verified Toast Celebration */}
+      {/* Key Verified Toast Notification */}
       {keyVerifiedToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold text-xs shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4 border border-emerald-400/40">
-          <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
-          <span>Access Pass Activated! Valid for 24 Hours. Welcome!</span>
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl bg-[#1D1D1D] text-[#F5F5F5] font-bold text-xs shadow-2xl flex items-center gap-2.5 border border-[#FF2525]/70 ra-corners max-w-[92vw]">
+          <CheckCircle2 className="w-4 h-4 text-[#FF2525] shrink-0" />
+          <span>Access Pass Activated — Valid for 24 Hours</span>
         </div>
       )}
 
@@ -886,6 +1029,8 @@ export default function App() {
         onOpenTelegram={() => setShowTelegramModal(true)}
         isAdminView={false}
         onExitAdmin={() => {}}
+        colorMode={colorMode}
+        onToggleColorMode={toggleColorMode}
       />
 
       {/* Main Tab Content */}
@@ -899,8 +1044,13 @@ export default function App() {
             user={effectiveUser}
             now={now}
             keyGenerationEnabled={settings?.key_generation_enabled !== false}
-            onRefresh={loadPublicData}
-            onNavigateToVip={() => handleTabChange('vip')}
+            onRefresh={() => refreshAllPublicConfig(true)}
+            onNavigateToVip={(mode?: 'single_platform' | 'all_platforms', platformId?: string | null) => {
+              if (mode) {
+                setVipIntent({ mode, platformId: platformId || null, nonce: Date.now() });
+              }
+              handleTabChange('vip');
+            }}
             onOpenKeyGen={() => {
               if (!effectiveUser?.is_blocked) {
                 setShowKeyGenModal(true);
@@ -913,6 +1063,10 @@ export default function App() {
           <VipSection
             batches={batches}
             plans={plans}
+            platforms={platforms}
+            initialVipMode={vipIntent?.mode}
+            initialPlatformId={vipIntent?.platformId}
+            vipIntentNonce={vipIntent?.nonce}
             loading={loading}
             isUserVip={isUserVipValid}
             user={effectiveUser}
@@ -920,7 +1074,7 @@ export default function App() {
             supportUrl={settings?.support_url || settings?.telegram_channel_url}
             vipPurchaseUrl={settings?.vip_telegram_url || settings?.vip_purchase_url}
             onOpenAuth={() => setShowAuthModal(true)}
-            onRefreshPlans={refreshPlansAndSettings}
+            onRefreshPlans={refreshAllPublicConfig}
             onOpenVipDashboard={() => handleTabChange('vip_dashboard')}
             vipTheme={{
               background: settings?.vip_theme_background,
@@ -937,6 +1091,8 @@ export default function App() {
           <ProfileSection
             user={effectiveUser}
             settings={settings}
+            colorMode={colorMode}
+            onToggleColorMode={toggleColorMode}
             onLogout={handleLogout}
             onGoToVip={() => handleTabChange('vip')}
             onSwitchAccount={handleSwitchAccount}
@@ -951,11 +1107,13 @@ export default function App() {
         )}
 
         {currentTab === 'vip_dashboard' && (
-          <div className="max-w-lg mx-auto px-4 pt-4 pb-28">
+          <div className="max-w-xl lg:max-w-4xl mx-auto px-3.5 sm:px-5 pt-4 pb-28">
             <React.Suspense
               fallback={
-                <div className="p-8 rounded-3xl bg-slate-900/60 border border-slate-800 text-center">
-                  <p className="text-xs font-bold text-amber-300 uppercase tracking-wider">Loading VIP Dashboard...</p>
+                <div className="p-8 rounded-2xl ra-panel ra-corners text-center">
+                  <p className="font-display text-xs font-bold text-[#FF2525] uppercase tracking-[0.2em]">
+                    Loading VIP Command Hub
+                  </p>
                 </div>
               }
             >

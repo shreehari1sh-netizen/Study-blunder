@@ -4,7 +4,13 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { createServer as createViteServer } from 'vite';
-import { StorageEngine, hashPassword, verifyPassword } from './src/server/storage.ts';
+import {
+  StorageEngine,
+  hashPassword,
+  verifyPassword,
+  ALLOWED_APP_THEME_PRESETS,
+  normalizeAppThemePreset,
+} from './src/server/storage.ts';
 import {
   authenticate,
   optionalAuthenticate,
@@ -42,6 +48,13 @@ app.use((req, res, next) => {
   if (req.path === '/api/festivals/stream' || req.headers['accept'] === 'text/event-stream') {
     next();
     return;
+  }
+
+  // Enforce strict no-store caching on all dynamic API endpoints so Android WebView/APK never serves stale config
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
   }
 
   const acceptEncoding = String(req.headers['accept-encoding'] || '');
@@ -313,18 +326,19 @@ app.use((err: unknown, _req: express.Request, res: express.Response, next: expre
   next(err);
 });
 
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Settings (Public View)
-app.get('/api/settings', (_req, res) => {
+// Single source of truth builder for Public Settings (used by GET /api/settings and SSE settings_update)
+function buildPublicSettingsPayload() {
   const settings = storage.getSettings();
-  res.json({
+  return {
     key_generation_enabled: settings.key_generation_enabled,
     shortener_url: settings.shortener_url,
     tutorial_video_url: settings.tutorial_video_url,
     telegram_channel_url: settings.telegram_channel_url,
+    study_blunder_telegram_url:
+      settings.study_blunder_telegram_url || settings.telegram_channel_url || 'https://t.me/studyblunder',
+    study_blunder_telegram_label: settings.study_blunder_telegram_label || 'Study Blunder Telegram',
+    study_fox_telegram_url: settings.study_fox_telegram_url || 'https://t.me/studyfoxofficial',
+    study_fox_telegram_label: settings.study_fox_telegram_label || 'Study Fox Telegram',
     telegram_popup_enabled: settings.telegram_popup_enabled,
     telegram_popup_title: settings.telegram_popup_title || 'Join Telegram Channel',
     telegram_popup_message:
@@ -346,19 +360,30 @@ app.get('/api/settings', (_req, res) => {
     vip_payment_amount: settings.vip_payment_amount ?? 0,
     vip_payment_instructions: settings.vip_payment_instructions ?? '',
     vip_payment_utr_required: Boolean(settings.vip_payment_utr_required),
-    app_name: settings.app_name || 'STUDY FOX',
+    home_single_vip_label: settings.home_single_vip_label || 'VIP',
+    home_single_vip_price: Number(settings.home_single_vip_price ?? 49),
+    home_single_vip_duration_days: Number(settings.home_single_vip_duration_days ?? 30),
+    home_single_vip_destination: settings.home_single_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_single_vip',
+    home_single_vip_url: settings.home_single_vip_url ?? '',
+    home_all_vip_label: settings.home_all_vip_label || 'ALL VIP',
+    home_all_vip_price: Number(settings.home_all_vip_price ?? 149),
+    home_all_vip_duration_days: Number(settings.home_all_vip_duration_days ?? 30),
+    home_all_vip_destination: settings.home_all_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_all_vip',
+    home_all_vip_url: settings.home_all_vip_url ?? '',
+    app_name: settings.app_name || 'STUDY BLUNDER',
     app_logo_url: settings.app_logo_url || '',
-    theme_primary: settings.theme_primary || '#6366f1',
-    theme_secondary: settings.theme_secondary || '#8b5cf6',
-    theme_background: settings.theme_background || '#070B14',
-    theme_text: settings.theme_text || '#f8fafc',
-    theme_button: settings.theme_button || '#4f46e5',
-    vip_theme_background: settings.vip_theme_background || '#090d16',
-    vip_theme_card: settings.vip_theme_card || '#0f172a',
-    vip_theme_accent: settings.vip_theme_accent || '#f59e0b',
-    vip_theme_text: settings.vip_theme_text || '#f8fafc',
-    vip_theme_button: settings.vip_theme_button || '#eab308',
-    vip_theme_border: settings.vip_theme_border || '#1e293b',
+    app_theme_preset: normalizeAppThemePreset(settings.app_theme_preset),
+    theme_primary: settings.theme_primary || '#FF2525',
+    theme_secondary: settings.theme_secondary || '#C90000',
+    theme_background: settings.theme_background || '#090909',
+    theme_text: settings.theme_text || '#F5F5F5',
+    theme_button: settings.theme_button || '#FF2525',
+    vip_theme_background: settings.vip_theme_background || '#090909',
+    vip_theme_card: settings.vip_theme_card || '#1D1D1D',
+    vip_theme_accent: settings.vip_theme_accent || '#FF2525',
+    vip_theme_text: settings.vip_theme_text || '#F5F5F5',
+    vip_theme_button: settings.vip_theme_button || '#FF2525',
+    vip_theme_border: settings.vip_theme_border || '#454545',
     announcement_slider_enabled: settings.announcement_slider_enabled !== false,
     announcement_slide_interval_seconds: settings.announcement_slide_interval_seconds || 5,
     support_enabled: settings.support_enabled !== false,
@@ -392,7 +417,13 @@ app.get('/api/settings', (_req, res) => {
     referral_reward_days: settings.referral_reward_days ?? 7,
     referral_program_enabled: storage.isReferralProgramEnabled(),
     referral_discount_config: storage.getReferralDiscountConfig(),
-  });
+    updated_at: settings.updated_at || new Date().toISOString(),
+  };
+}
+
+// Settings (Public View)
+app.get('/api/settings', (_req, res) => {
+  res.json(buildPublicSettingsPayload());
 });
 
 // Render & Uptime Monitor Health Check Endpoint (GET + HEAD)
@@ -400,8 +431,9 @@ app.all('/api/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.status(200).json({
     status: 'ok',
-    service: 'study-fox',
-    version: '1.0.0',
+    service: 'study-blunder',
+    version: '2.0.0',
+    storage: storage.getStorageHealth(),
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
@@ -453,7 +485,7 @@ app.get('/api/platforms/:id/access', optionalAuthenticate, (req: AuthenticatedRe
 
   const graceHours = Number(settings.vip_grace_period_hours ?? 24) || 24;
   const graceMs = Math.max(0, graceHours) * 60 * 60 * 1000;
-  const hasVipEntitlement = Boolean(
+  const hasAllPlatformsVip = Boolean(
     isPrivilegedAdmin ||
     (user &&
       !user.is_blocked &&
@@ -461,6 +493,16 @@ app.get('/api/platforms/:id/access', optionalAuthenticate, (req: AuthenticatedRe
       user.vip_expires_at &&
       new Date(user.vip_expires_at).getTime() + graceMs > now)
   );
+  const singlePlatformExpiryIso =
+    user && !user.is_blocked && user.vip_platform_expiries && typeof user.vip_platform_expiries === 'object'
+      ? user.vip_platform_expiries[platform.id]
+      : undefined;
+  const hasThisPlatformVip = Boolean(
+    singlePlatformExpiryIso &&
+      Number.isFinite(new Date(singlePlatformExpiryIso).getTime()) &&
+      new Date(singlePlatformExpiryIso).getTime() + graceMs > now
+  );
+  const hasVipEntitlement = hasAllPlatformsVip || hasThisPlatformVip;
 
   // Enforce Single-Device VIP Binding for student VIP accounts
   let isVipActive = hasVipEntitlement;
@@ -813,6 +855,9 @@ app.post('/api/vip/payment-claims', authenticate, async (req: AuthenticatedReque
     screenshot_data_url,
     screenshot_mime_type,
     purchase_source,
+    vip_scope,
+    selected_platform_id,
+    selected_platform_name,
   } = req.body || {};
 
   // 1. Validate Login Gmail / Email field while linking strictly to authenticated user.id
@@ -833,67 +878,113 @@ app.post('/api/vip/payment-claims', authenticate, async (req: AuthenticatedReque
     return;
   }
 
-  // 2. Validate Selected VIP Plan & Authoritative Price from Backend
+  // 2. Validate VIP Scope (One Platform VIP vs All Platforms VIP) & Authoritative Price from Backend
   const settings = storage.getSettings();
-  const activePlans = storage.getVipPlans(true);
-  const allPlans = storage.getVipPlans(false);
-  let matchedPlan = plan_id ? activePlans.find((p) => p.id === String(plan_id)) : undefined;
+  const resolvedVipScope: 'single_platform' | 'all_platforms' =
+    vip_scope === 'single_platform' ? 'single_platform' : 'all_platforms';
 
-  if (activePlans.length > 0) {
-    if (!plan_id) {
+  let selectedPlatformRecord: ReturnType<typeof storage.getPlatformById> | undefined = undefined;
+  let matchedPlan: ReturnType<typeof storage.getVipPlans>[number] | undefined = undefined;
+  let basePlanPrice = 0;
+
+  if (resolvedVipScope === 'single_platform') {
+    const cleanPlatformId = String(selected_platform_id || '').trim();
+    if (!cleanPlatformId) {
       res.status(400).json({
-        code: 'PLAN_REQUIRED',
-        error: 'Please select a VIP plan before submitting your payment verification request.',
+        code: 'PLATFORM_REQUIRED',
+        error: 'Please select a platform for One Platform VIP before submitting payment.',
+      });
+      return;
+    }
+    selectedPlatformRecord = storage.getPlatformById(cleanPlatformId);
+    if (!selectedPlatformRecord || !selectedPlatformRecord.is_visible || selectedPlatformRecord.status !== 'active') {
+      res.status(400).json({
+        code: 'PLATFORM_UNAVAILABLE',
+        error: 'The selected platform is no longer available. Please refresh and choose an active platform.',
       });
       return;
     }
 
-    if (!matchedPlan) {
-      const inactiveMatch = allPlans.find((p) => p.id === String(plan_id));
+    const activeSinglePlans = storage
+      .getVipPlans(true)
+      .filter((p) => p.plan_scope === 'single_platform');
+    if (plan_id && !String(plan_id).startsWith('single_platform_')) {
+      matchedPlan = activeSinglePlans.find((p) => p.id === String(plan_id));
+    }
+
+    if (matchedPlan) {
+      basePlanPrice = Number(matchedPlan.price_inr);
+    } else {
+      basePlanPrice = Number(settings.home_single_vip_price ?? 49);
+    }
+    if (!Number.isFinite(basePlanPrice) || basePlanPrice <= 0) {
+      basePlanPrice = 49;
+    }
+  } else {
+    const activeAllPlans = storage
+      .getVipPlans(true)
+      .filter((p) => p.plan_scope !== 'single_platform');
+    const allPlans = storage.getVipPlans(false);
+    matchedPlan = plan_id ? activeAllPlans.find((p) => p.id === String(plan_id)) : undefined;
+
+    if (activeAllPlans.length > 0 && plan_id !== 'all_platforms_default') {
+      if (!plan_id) {
+        res.status(400).json({
+          code: 'PLAN_REQUIRED',
+          error: 'Please select a VIP plan before submitting your payment verification request.',
+        });
+        return;
+      }
+
+      if (!matchedPlan) {
+        const inactiveMatch = allPlans.find((p) => p.id === String(plan_id));
+        res.status(400).json({
+          code: 'PLAN_UNAVAILABLE',
+          error: inactiveMatch
+            ? `The selected VIP plan ("${inactiveMatch.title}") is currently disabled or unavailable. Please select an active plan.`
+            : 'The selected VIP plan is no longer available. Please refresh and select an active VIP plan.',
+        });
+        return;
+      }
+    } else if (plan_id && plan_id !== 'all_platforms_default' && activeAllPlans.length === 0) {
       res.status(400).json({
         code: 'PLAN_UNAVAILABLE',
-        error: inactiveMatch
-          ? `The selected VIP plan ("${inactiveMatch.title}") is currently disabled or unavailable. Please select an active plan.`
-          : 'The selected VIP plan is no longer available. Please refresh and select an active VIP plan.',
+        error: 'The selected VIP plan is unavailable.',
       });
       return;
     }
-  } else if (plan_id) {
-    // No active plans exist, but a plan_id was supplied
-    res.status(400).json({
-      code: 'PLAN_UNAVAILABLE',
-      error: 'The selected VIP plan is unavailable.',
-    });
-    return;
-  }
 
-  // Authoritative price MUST come from the selected active VIP plan when a plan is selected,
-  // falling back to settings.vip_payment_amount only if no VIP plans are configured in the system.
-  const basePlanPrice = matchedPlan
-    ? Number(matchedPlan.price_inr)
-    : settings.vip_payment_amount && Number(settings.vip_payment_amount) > 0
-    ? Number(settings.vip_payment_amount)
-    : 0;
+    basePlanPrice = matchedPlan
+      ? Number(matchedPlan.price_inr)
+      : Number(settings.home_all_vip_price || settings.vip_payment_amount || 149);
 
-  if (matchedPlan && (!Number.isFinite(basePlanPrice) || basePlanPrice <= 0)) {
-    res.status(400).json({
-      error: 'The selected VIP plan does not have a valid configured price.',
-    });
-    return;
+    if (matchedPlan && (!Number.isFinite(basePlanPrice) || basePlanPrice <= 0)) {
+      res.status(400).json({
+        error: 'The selected VIP plan does not have a valid configured price.',
+      });
+      return;
+    }
   }
 
   // Calculate backend-verified referral discount for this user & plan (never trust frontend discount values)
-  const discountPreview = matchedPlan
-    ? storage.calculateReferralDiscountForUser(user.id, matchedPlan.id)
-    : {
-        plan_id: String(plan_id || 'qr_vip_claim'),
-        plan_title: String(plan_title || 'VIP Plan'),
-        original_plan_price: basePlanPrice,
-        discount_eligible: false,
-        discount_applied: 0,
-        final_payable_amount: basePlanPrice,
-        referral_code_attributed: null,
-      };
+  const discountPreview =
+    matchedPlan
+      ? storage.calculateReferralDiscountForUser(user.id, matchedPlan.id)
+      : {
+          plan_id:
+            resolvedVipScope === 'single_platform' && selectedPlatformRecord
+              ? `single_platform_${selectedPlatformRecord.id}`
+              : String(plan_id || 'all_platforms_default'),
+          plan_title:
+            resolvedVipScope === 'single_platform' && selectedPlatformRecord
+              ? `One Platform VIP — ${selectedPlatformRecord.name}`
+              : String(plan_title || 'All Platforms VIP'),
+          original_plan_price: basePlanPrice,
+          discount_eligible: false,
+          discount_applied: 0,
+          final_payable_amount: basePlanPrice,
+          referral_code_attributed: null,
+        };
 
   const configuredAmount = discountPreview.discount_eligible
     ? discountPreview.final_payable_amount
@@ -1048,14 +1139,29 @@ app.post('/api/vip/payment-claims', authenticate, async (req: AuthenticatedReque
     }
 
     // 6. Save claim record in database with status 'pending_verification' and immutable plan/price snapshot
-    const resolvedPlanTitle = matchedPlan
-      ? matchedPlan.title
-      : plan_title
-      ? String(plan_title).trim().slice(0, 120)
-      : 'VIP QR Payment Verification';
+    const resolvedPlanTitle =
+      resolvedVipScope === 'single_platform' && selectedPlatformRecord
+        ? matchedPlan
+          ? `${matchedPlan.title} — ${selectedPlatformRecord.name}`
+          : `One Platform VIP — ${selectedPlatformRecord.name}`
+        : matchedPlan
+        ? matchedPlan.title
+        : plan_title
+        ? String(plan_title).trim().slice(0, 120)
+        : 'All Platforms VIP';
 
-    const resolvedPlanDurationDays = matchedPlan ? Number(matchedPlan.duration_days) || 30 : undefined;
-    const resolvedBonusDays = matchedPlan && matchedPlan.bonus_days ? Math.max(0, Number(matchedPlan.bonus_days) || 0) : 0;
+    const resolvedPlanDurationDays =
+      resolvedVipScope === 'single_platform'
+        ? matchedPlan
+          ? Number(matchedPlan.duration_days) || Math.max(1, Number(settings.home_single_vip_duration_days ?? 30) || 30)
+          : Math.max(1, Number(settings.home_single_vip_duration_days ?? 30) || 30)
+        : matchedPlan
+        ? Number(matchedPlan.duration_days) || 30
+        : Math.max(1, Number(settings.home_all_vip_duration_days ?? 30) || 30);
+    const resolvedBonusDays =
+      matchedPlan && matchedPlan.bonus_days
+        ? Math.max(0, Number(matchedPlan.bonus_days) || 0)
+        : 0;
     const resolvedPurchaseSource: 'pre_key' | 'in_app' = purchase_source === 'pre_key' ? 'pre_key' : 'in_app';
     const requestId = storage.generatePaymentRequestId();
 
@@ -1064,8 +1170,22 @@ app.post('/api/vip/payment-claims', authenticate, async (req: AuthenticatedReque
       user_id: user.id,
       email: user.email,
       submitted_email: cleanSubmittedEmail,
-      plan_id: matchedPlan ? matchedPlan.id : String(plan_id || 'qr_vip_claim'),
+      plan_id:
+        matchedPlan
+          ? matchedPlan.id
+          : resolvedVipScope === 'single_platform' && selectedPlatformRecord
+          ? `single_platform_${selectedPlatformRecord.id}`
+          : String(plan_id || 'all_platforms_default'),
       plan_title: resolvedPlanTitle,
+      vip_scope: resolvedVipScope,
+      selected_platform_id:
+        resolvedVipScope === 'single_platform' && selectedPlatformRecord ? selectedPlatformRecord.id : null,
+      selected_platform_name:
+        resolvedVipScope === 'single_platform' && selectedPlatformRecord
+          ? selectedPlatformRecord.name
+          : selected_platform_name
+          ? String(selected_platform_name).trim().slice(0, 120)
+          : null,
       plan_duration_days: resolvedPlanDurationDays,
       bonus_days_applied: resolvedBonusDays,
       original_plan_price: basePlanPrice > 0 ? basePlanPrice : roundedAmount,
@@ -1355,6 +1475,7 @@ async function verifyUserCredentials(email: string, password: string) {
 }
 
 app.post('/api/auth/login', async (req, res) => {
+  try {
   const { email, password } = req.body;
   const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '127.0.0.1';
   const userAgent = req.headers['user-agent'] || 'Unknown Browser';
@@ -1508,8 +1629,13 @@ app.post('/api/auth/login', async (req, res) => {
     );
   }
 
-  // Update last login
+  // Update last login & award daily login XP (idempotent once per IST calendar day)
   await storage.updateUser(user.id, { last_login_at: new Date().toISOString() });
+  try {
+    storage.awardDailyLoginXp(user.id);
+  } catch {
+    // Non-blocking XP award
+  }
 
   // Optional referral code attribution on login (if provided)
   const rawReferralCode = typeof req.body?.referral_code === 'string' ? req.body.referral_code.trim().toUpperCase() : '';
@@ -1550,9 +1676,17 @@ app.post('/api/auth/login', async (req, res) => {
     token,
     user: toPublicUser(finalUser, deviceId),
   });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Login failed due to server error.';
+    console.error('[AUTH LOGIN FAILURE]', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: msg });
+    }
+  }
 });
 
 app.post('/api/auth/admin-login', async (req, res) => {
+  try {
   const { email, password } = req.body;
   const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '127.0.0.1';
   const userAgent = req.headers['user-agent'] || 'Unknown Browser';
@@ -1647,6 +1781,13 @@ app.post('/api/auth/admin-login', async (req, res) => {
     token,
     user: toPublicUser(updatedUser),
   });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Administrative login failed due to server error.';
+    console.error('[AUTH ADMIN LOGIN FAILURE]', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: msg });
+    }
+  }
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -1940,6 +2081,11 @@ app.get('/api/auth/me', authenticate, async (req: AuthenticatedRequest, res) => 
   }
 
   const latestUser = storage.getUserById(user.id) || user;
+  try {
+    storage.awardDailyLoginXp(latestUser.id);
+  } catch {
+    // Non-blocking daily login XP award
+  }
   res.json({ user: toPublicUser(latestUser, deviceId) });
 });
 
@@ -2126,7 +2272,7 @@ app.get('/api/admin/platforms', authenticate, requireAdminPermission('platforms'
 
 app.post('/api/admin/platforms', authenticate, requireAdminPermission('platforms', 'add'), async (req: AuthenticatedRequest, res) => {
   const { name, category, logo_url, target_url, access_type, vip_target_url, status, is_visible, display_order } = req.body;
-  if (!name || !target_url) {
+  if (!name || !String(name).trim() || !target_url || !String(target_url).trim()) {
     res.status(400).json({ error: 'Platform name and destination URL are required.' });
     return;
   }
@@ -2179,6 +2325,7 @@ app.post('/api/admin/platforms', authenticate, requireAdminPermission('platforms
         new_value: { name: platform.name, category: platform.category, access_type: platform.access_type },
       });
     }
+    broadcastPlatformsUpdate();
     res.status(201).json({ platform });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to save platform in database.';
@@ -2251,6 +2398,7 @@ app.put('/api/admin/platforms/:id', authenticate, requireAdminPermission('platfo
         new_value: { name: updated.name, status: updated.status, is_visible: updated.is_visible },
       });
     }
+    broadcastPlatformsUpdate();
     res.json({ platform: updated });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update platform in database.';
@@ -2280,6 +2428,7 @@ app.delete('/api/admin/platforms/:id', authenticate, requireAdminPermission('pla
         new_value: null,
       });
     }
+    broadcastPlatformsUpdate();
     res.json({ message: 'Platform deleted successfully.' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to delete platform from database.';
@@ -2480,6 +2629,13 @@ app.post('/api/admin/users/:id/block', authenticate, requireAdminPermission('use
     }
   }
 
+  broadcastVipStatusUpdate({
+    user_id: target.id,
+    email: target.email,
+    is_blocked: true,
+    blocked_reason: cleanReason,
+  });
+
   res.json({
     user: toPublicUser(updated!),
     message: `User account (${target.email}) has been blocked.`,
@@ -2549,6 +2705,12 @@ app.post('/api/admin/users/:id/unblock', authenticate, requireAdminPermission('u
       // Ignore if external table does not have columns yet
     }
   }
+
+  broadcastVipStatusUpdate({
+    user_id: target.id,
+    email: target.email,
+    is_blocked: false,
+  });
 
   res.json({
     user: toPublicUser(updated!),
@@ -2857,6 +3019,7 @@ app.get('/api/admin/vip/plans', authenticate, requireAdminPermission('vip', 'vie
 app.post('/api/admin/vip/plans', authenticate, requireAdminPermission('vip', 'add'), async (req: AuthenticatedRequest, res) => {
   const {
     title,
+    plan_scope,
     price_inr,
     original_price_inr,
     duration_days,
@@ -2868,8 +3031,13 @@ app.post('/api/admin/vip/plans', authenticate, requireAdminPermission('vip', 'ad
     is_active,
     display_order,
   } = req.body;
-  if (!title || price_inr === undefined) {
+  if (!title || !String(title).trim() || price_inr === undefined || price_inr === null || price_inr === '') {
     res.status(400).json({ error: 'Plan title and price are required.' });
+    return;
+  }
+  const parsedPriceInr = Number(price_inr);
+  if (!Number.isFinite(parsedPriceInr) || parsedPriceInr < 0 || parsedPriceInr > 1000000) {
+    res.status(400).json({ error: 'Plan price must be a valid non-negative number.' });
     return;
   }
 
@@ -2888,12 +3056,15 @@ app.post('/api/admin/vip/plans', authenticate, requireAdminPermission('vip', 'ad
     original_price_inr !== undefined && original_price_inr !== null && original_price_inr !== '' && Number(original_price_inr) > 0
       ? Number(original_price_inr)
       : undefined;
+  const resolvedPlanScope: 'single_platform' | 'all_platforms' =
+    plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms';
 
   const now = new Date().toISOString();
   try {
     const plan = await storage.addVipPlan({
       id: crypto.randomUUID(),
       title: title.trim(),
+      plan_scope: resolvedPlanScope,
       price_inr: Number(price_inr) || 0,
       original_price_inr: parsedOrigPrice,
       duration_days: parsedDays,
@@ -2916,11 +3087,12 @@ app.post('/api/admin/vip/plans', authenticate, requireAdminPermission('vip', 'ad
         section: 'vip',
         action_type: 'vip_plan_change',
         target_id: plan.id,
-        description: `Created VIP Plan "${plan.title}" (₹${plan.price_inr}, ${plan.duration_days}d + ${plan.bonus_days || 0} bonus)`,
+        description: `Created ${resolvedPlanScope === 'single_platform' ? 'One Platform VIP' : 'All Platforms VIP'} Plan "${plan.title}" (₹${plan.price_inr}, ${plan.duration_days}d + ${plan.bonus_days || 0} bonus)`,
         previous_value: null,
-        new_value: { title: plan.title, price_inr: plan.price_inr, duration_days: plan.duration_days, bonus_days: plan.bonus_days },
+        new_value: { title: plan.title, plan_scope: plan.plan_scope, price_inr: plan.price_inr, duration_days: plan.duration_days, bonus_days: plan.bonus_days },
       });
     }
+    broadcastVipPlansUpdate();
     res.status(201).json({ plan });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to save VIP plan in database.';
@@ -2932,6 +3104,7 @@ app.put('/api/admin/vip/plans/:id', authenticate, requireAdminPermission('vip', 
   const { id } = req.params;
   const {
     title,
+    plan_scope,
     price_inr,
     original_price_inr,
     duration_days,
@@ -2964,6 +3137,9 @@ app.put('/api/admin/vip/plans/:id', authenticate, requireAdminPermission('vip', 
   const prevPlan = storage.getVipPlans(false).find((p) => p.id === id);
   const safeUpdates = {
     ...(title !== undefined && { title: String(title).trim() }),
+    ...(plan_scope !== undefined && {
+      plan_scope: (plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms') as 'single_platform' | 'all_platforms',
+    }),
     ...(price_inr !== undefined && { price_inr: Math.max(0, Number(price_inr) || 0) }),
     ...(original_price_inr !== undefined && {
       original_price_inr:
@@ -3000,6 +3176,7 @@ app.put('/api/admin/vip/plans/:id', authenticate, requireAdminPermission('vip', 
         new_value: { title: updated.title, price_inr: updated.price_inr, duration_days: updated.duration_days, is_active: updated.is_active },
       });
     }
+    broadcastVipPlansUpdate();
     res.json({ plan: updated });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update VIP plan in database.';
@@ -3029,6 +3206,7 @@ app.delete('/api/admin/vip/plans/:id', authenticate, requireAdminPermission('vip
         new_value: null,
       });
     }
+    broadcastVipPlansUpdate();
     res.json({ message: 'VIP Plan deleted successfully.' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to delete VIP plan from database.';
@@ -3064,6 +3242,7 @@ app.post('/api/admin/vip/batches', authenticate, requireAdminPermission('vip', '
       display_order: Number(display_order) || 0,
       created_at: new Date().toISOString(),
     });
+    broadcastVipBatchesUpdate();
     res.status(201).json({ batch });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to save batch in database.';
@@ -3097,6 +3276,7 @@ app.put('/api/admin/vip/batches/:id', authenticate, requireAdminPermission('vip'
       res.status(404).json({ error: 'Batch not found.' });
       return;
     }
+    broadcastVipBatchesUpdate();
     res.json({ batch: updated });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update batch in database.';
@@ -3112,6 +3292,7 @@ app.delete('/api/admin/vip/batches/:id', authenticate, requireAdminPermission('v
       res.status(404).json({ error: 'Batch not found.' });
       return;
     }
+    broadcastVipBatchesUpdate();
     res.json({ message: 'Batch deleted.' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to delete batch from database.';
@@ -3533,10 +3714,21 @@ app.post('/api/admin/payments/:id/verify', authenticate, requireAdmin, async (re
 
   const resolvedDays = baseDays + bonusDays;
 
+  const isSinglePlatformScope =
+    payment.vip_scope === 'single_platform' && Boolean(payment.selected_platform_id);
+  const targetPlatformId = payment.selected_platform_id || '';
+  const targetPlatformObj = targetPlatformId ? storage.getPlatformById(targetPlatformId) : undefined;
+  const targetPlatformLabel =
+    targetPlatformObj?.name || payment.selected_platform_name || 'Selected Platform';
+
   const updatedPayment = await storage.updatePayment(id, {
     status: 'completed',
     bonus_days_applied: bonusDays,
-    admin_note: cleanNote || `Approved by ${reviewerEmail} (${resolvedDays} days VIP granted${bonusDays > 0 ? ` including +${bonusDays} bonus days` : ''}).`,
+    admin_note:
+      cleanNote ||
+      (isSinglePlatformScope
+        ? `Approved by ${reviewerEmail} (${resolvedDays} days One Platform VIP granted for "${targetPlatformLabel}" ONLY).`
+        : `Approved by ${reviewerEmail} (${resolvedDays} days All Platforms VIP granted${bonusDays > 0 ? ` including +${bonusDays} bonus days` : ''}).`),
     reviewed_by: reviewerEmail,
     reviewed_at: nowIso,
   });
@@ -3544,40 +3736,86 @@ app.post('/api/admin/payments/:id/verify', authenticate, requireAdmin, async (re
   let updatedUserPublic = undefined;
   if (targetUser) {
     const nowMs = Date.now();
-    const currentExpiryMs =
-      targetUser.vip_active && targetUser.vip_expires_at
-        ? Math.max(nowMs, new Date(targetUser.vip_expires_at).getTime())
-        : nowMs;
-    const newExpiryIso = new Date(currentExpiryMs + resolvedDays * 24 * 60 * 60 * 1000).toISOString();
+    if (isSinglePlatformScope && targetPlatformId) {
+      const existingExpiries: Record<string, string> = {
+        ...(targetUser.vip_platform_expiries || {}),
+      };
+      const existingPlatformExpiryIso = existingExpiries[targetPlatformId];
+      const existingPlatformExpiryMs =
+        existingPlatformExpiryIso && Number.isFinite(new Date(existingPlatformExpiryIso).getTime())
+          ? Math.max(nowMs, new Date(existingPlatformExpiryIso).getTime())
+          : nowMs;
+      const newPlatformExpiryIso = new Date(
+        existingPlatformExpiryMs + resolvedDays * 24 * 60 * 60 * 1000
+      ).toISOString();
 
-    const updatedUser = await storage.updateUser(targetUser.id, {
-      vip_active: true,
-      vip_expires_at: newExpiryIso,
-    });
-    if (updatedUser) {
-      updatedUserPublic = toPublicUser(updatedUser);
+      existingExpiries[targetPlatformId] = newPlatformExpiryIso;
+      const nextAllowedIds = Array.from(
+        new Set([...(targetUser.vip_allowed_platform_ids || []), targetPlatformId])
+      );
+
+      // STRICT SCOPING: Do NOT set vip_active = true! Only grant the selected platform!
+      const updatedUser = await storage.updateUser(targetUser.id, {
+        vip_allowed_platform_ids: nextAllowedIds,
+        vip_platform_expiries: existingExpiries,
+      });
+      if (updatedUser) {
+        updatedUserPublic = toPublicUser(updatedUser);
+      }
+
+      storage.addStudentNotification({
+        user_id: targetUser.id,
+        type: 'payment_approved',
+        title: `One Platform VIP Activated — ${targetPlatformLabel}`,
+        message: `Your payment (${payment.request_id || payment.id}) has been verified! You now have ${resolvedDays} days of VIP access strictly for "${targetPlatformLabel}" until ${new Date(newPlatformExpiryIso).toLocaleDateString()}.`,
+        action_tab: 'home',
+      });
+
+      broadcastVipStatusUpdate({
+        user_id: targetUser.id,
+        email: targetUser.email,
+        vip_active: Boolean(updatedUser?.vip_active),
+        vip_expires_at: updatedUser?.vip_expires_at || null,
+        payment_id: payment.id,
+        request_id: payment.request_id,
+        payment_status: 'completed',
+      });
+    } else {
+      const currentExpiryMs =
+        targetUser.vip_active && targetUser.vip_expires_at
+          ? Math.max(nowMs, new Date(targetUser.vip_expires_at).getTime())
+          : nowMs;
+      const newExpiryIso = new Date(currentExpiryMs + resolvedDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const updatedUser = await storage.updateUser(targetUser.id, {
+        vip_active: true,
+        vip_expires_at: newExpiryIso,
+      });
+      if (updatedUser) {
+        updatedUserPublic = toPublicUser(updatedUser);
+      }
+
+      storage.addStudentNotification({
+        user_id: targetUser.id,
+        type: 'payment_approved',
+        title: 'All Platforms VIP Activated! 👑',
+        message: `Your payment (${payment.request_id || payment.id}) for ${payment.plan_title} has been verified! ${resolvedDays} days of All Platforms VIP access are now active until ${new Date(newExpiryIso).toLocaleDateString()}.`,
+        action_tab: 'vip',
+      });
+
+      // Trigger referral reward qualification and verified VIP sale attribution if this user was referred
+      await storage.processReferralQualificationOnVipApproval(targetUser.id, updatedPayment || payment, newExpiryIso);
+
+      broadcastVipStatusUpdate({
+        user_id: targetUser.id,
+        email: targetUser.email,
+        vip_active: true,
+        vip_expires_at: newExpiryIso,
+        payment_id: payment.id,
+        request_id: payment.request_id,
+        payment_status: 'completed',
+      });
     }
-
-    storage.addStudentNotification({
-      user_id: targetUser.id,
-      type: 'payment_approved',
-      title: 'VIP Membership Activated! 👑',
-      message: `Your payment (${payment.request_id || payment.id}) for ${payment.plan_title} has been verified! ${resolvedDays} days of VIP access are now active until ${new Date(newExpiryIso).toLocaleDateString()}.`,
-      action_tab: 'vip',
-    });
-
-    // Trigger referral reward qualification and verified VIP sale attribution if this user was referred
-    await storage.processReferralQualificationOnVipApproval(targetUser.id, updatedPayment || payment, newExpiryIso);
-
-    broadcastVipStatusUpdate({
-      user_id: targetUser.id,
-      email: targetUser.email,
-      vip_active: true,
-      vip_expires_at: newExpiryIso,
-      payment_id: payment.id,
-      request_id: payment.request_id,
-      payment_status: 'completed',
-    });
   }
 
   if (caller) {
@@ -3686,26 +3924,33 @@ app.post('/api/admin/keys/settings', authenticate, requireAdminPermission('keys'
     else equivalentHours = validatedDuration;
   }
 
-  const updated = await storage.updateSettings({
-    ...(key_generation_enabled !== undefined && { key_generation_enabled: Boolean(key_generation_enabled) }),
-    ...(shortener_url && { shortener_url: String(shortener_url).trim() }),
-    ...(tutorial_video_url && { tutorial_video_url: String(tutorial_video_url).trim() }),
-    ...(equivalentHours !== undefined && { key_expiry_hours: equivalentHours }),
-    ...(validatedDuration !== undefined && { free_access_duration: validatedDuration }),
-    ...(validatedUnit !== undefined && { free_access_unit: validatedUnit }),
-  });
+  try {
+    const updated = await storage.updateSettings({
+      ...(key_generation_enabled !== undefined && { key_generation_enabled: Boolean(key_generation_enabled) }),
+      ...(shortener_url !== undefined && { shortener_url: String(shortener_url).trim() }),
+      ...(tutorial_video_url !== undefined && { tutorial_video_url: String(tutorial_video_url).trim() }),
+      ...(equivalentHours !== undefined && { key_expiry_hours: equivalentHours }),
+      ...(validatedDuration !== undefined && { free_access_duration: validatedDuration }),
+      ...(validatedUnit !== undefined && { free_access_unit: validatedUnit }),
+    });
 
-  res.json({
-    settings: {
-      key_generation_enabled: updated.key_generation_enabled,
-      shortener_url: updated.shortener_url,
-      tutorial_video_url: updated.tutorial_video_url,
-      key_expiry_hours: updated.key_expiry_hours,
-      free_access_duration: updated.free_access_duration ?? updated.key_expiry_hours ?? 24,
-      free_access_unit: updated.free_access_unit || 'hours',
-    },
-    message: 'Free Access Key settings saved successfully.',
-  });
+    broadcastSettingsUpdate();
+
+    res.json({
+      settings: {
+        key_generation_enabled: updated.key_generation_enabled,
+        shortener_url: updated.shortener_url,
+        tutorial_video_url: updated.tutorial_video_url,
+        key_expiry_hours: updated.key_expiry_hours,
+        free_access_duration: updated.free_access_duration ?? updated.key_expiry_hours ?? 24,
+        free_access_unit: updated.free_access_unit || 'hours',
+      },
+      message: 'Free Access Key settings saved successfully.',
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to save Free Access Key settings in database.';
+    res.status(500).json({ error: msg });
+  }
 });
 
 app.post('/api/admin/keys/:id/revoke', authenticate, requireAdminPermission('keys', 'edit'), async (req, res) => {
@@ -4231,6 +4476,7 @@ app.post('/api/admin/announcements', authenticate, requireAdminPermission('annou
       created_at: now,
       updated_at: now,
     });
+    broadcastAnnouncementsUpdate();
     res.status(201).json({ announcement });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to save announcement in database.';
@@ -4291,6 +4537,7 @@ app.put('/api/admin/announcements/:id', authenticate, requireAdminPermission('an
       res.status(404).json({ error: 'Announcement not found.' });
       return;
     }
+    broadcastAnnouncementsUpdate();
     res.json({ announcement: updated });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update announcement in database.';
@@ -4306,6 +4553,7 @@ app.delete('/api/admin/announcements/:id', authenticate, requireAdminPermission(
       res.status(404).json({ error: 'Announcement not found.' });
       return;
     }
+    broadcastAnnouncementsUpdate();
     res.json({ message: 'Announcement deleted.' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to delete announcement from database.';
@@ -4496,6 +4744,11 @@ app.post('/api/admin/bulk-delete', authenticate, requireAdmin, async (req: Authe
       ip_address: clientIp,
     });
 
+    if (cleanSection === 'platforms') broadcastPlatformsUpdate();
+    else if (cleanSection === 'vip_plans') broadcastVipPlansUpdate();
+    else if (cleanSection === 'vip_batches') broadcastVipBatchesUpdate();
+    else if (cleanSection === 'announcements') broadcastAnnouncementsUpdate();
+
     res.json({
       success: true,
       section: cleanSection,
@@ -4580,6 +4833,10 @@ app.post('/api/admin/cleanup/execute', authenticate, requireAdmin, async (req: A
     }
   }
 
+  if (op.startsWith('platforms_')) broadcastPlatformsUpdate();
+  else if (op.startsWith('plans_')) broadcastVipPlansUpdate();
+  else if (op.startsWith('announcements_')) broadcastAnnouncementsUpdate();
+
   res.json({
     success: true,
     operation: op,
@@ -4605,6 +4862,10 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     shortener_url,
     tutorial_video_url,
     telegram_channel_url,
+    study_blunder_telegram_url,
+    study_blunder_telegram_label,
+    study_fox_telegram_url,
+    study_fox_telegram_label,
     telegram_popup_enabled,
     telegram_popup_title,
     telegram_popup_message,
@@ -4616,14 +4877,27 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     maintenance_mode,
     login_enabled,
     key_expiry_hours,
+    free_access_duration,
+    free_access_unit,
     vip_purchase_url,
     vip_telegram_url,
     vip_payment_qr_url,
     vip_payment_amount,
     vip_payment_instructions,
     vip_payment_utr_required,
+    home_single_vip_label,
+    home_single_vip_price,
+    home_single_vip_duration_days,
+    home_single_vip_destination,
+    home_single_vip_url,
+    home_all_vip_label,
+    home_all_vip_price,
+    home_all_vip_duration_days,
+    home_all_vip_destination,
+    home_all_vip_url,
     app_name,
     app_logo_url,
+    app_theme_preset,
     theme_primary,
     theme_secondary,
     theme_background,
@@ -4679,9 +4953,38 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     return;
   }
 
-  if (shortener_url && !isSafeHttpUrl(shortener_url)) {
+  if (shortener_url !== undefined && String(shortener_url).trim().length > 0 && !isSafeHttpUrl(shortener_url)) {
     res.status(400).json({ error: 'Shortener URL must be a valid URL starting with http:// or https://' });
     return;
+  }
+
+  let validatedKeyExpiryHours: number | undefined = undefined;
+  if (key_expiry_hours !== undefined && key_expiry_hours !== null && key_expiry_hours !== '') {
+    const parsedExp = Number(key_expiry_hours);
+    if (!Number.isFinite(parsedExp) || parsedExp <= 0 || parsedExp > 8760) {
+      res.status(400).json({ error: 'Key Expiry Hours must be a positive number between 1 and 8760.' });
+      return;
+    }
+    validatedKeyExpiryHours = parsedExp;
+  }
+
+  let validatedFreeDuration: number | undefined = undefined;
+  if (free_access_duration !== undefined && free_access_duration !== null && free_access_duration !== '') {
+    const parsedDur = Number(free_access_duration);
+    if (!Number.isFinite(parsedDur) || parsedDur <= 0) {
+      res.status(400).json({ error: 'Free Access Duration must be a positive number.' });
+      return;
+    }
+    validatedFreeDuration = parsedDur;
+  }
+
+  let validatedFreeUnit: 'minutes' | 'hours' | 'days' | undefined = undefined;
+  if (free_access_unit !== undefined) {
+    if (!['minutes', 'hours', 'days'].includes(String(free_access_unit))) {
+      res.status(400).json({ error: 'Free Access Unit must be minutes, hours, or days.' });
+      return;
+    }
+    validatedFreeUnit = free_access_unit as 'minutes' | 'hours' | 'days';
   }
 
   if (tutorial_video_url !== undefined && String(tutorial_video_url).trim().length > 0 && !isSafeHttpUrl(tutorial_video_url)) {
@@ -4691,6 +4994,16 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
 
   if (telegram_channel_url !== undefined && String(telegram_channel_url).trim().length > 0 && !isSafeHttpUrl(telegram_channel_url)) {
     res.status(400).json({ error: 'Telegram Channel URL must be a valid URL starting with http:// or https://' });
+    return;
+  }
+
+  if (study_blunder_telegram_url !== undefined && String(study_blunder_telegram_url).trim().length > 0 && !isSafeHttpUrl(study_blunder_telegram_url)) {
+    res.status(400).json({ error: 'Study Blunder Telegram URL must be a valid URL starting with http:// or https://' });
+    return;
+  }
+
+  if (study_fox_telegram_url !== undefined && String(study_fox_telegram_url).trim().length > 0 && !isSafeHttpUrl(study_fox_telegram_url)) {
+    res.status(400).json({ error: 'Study Fox Telegram URL must be a valid URL starting with http:// or https://' });
     return;
   }
 
@@ -4787,6 +5100,17 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     }
   }
 
+  // Theme Preset Validation (5 official themes)
+  if (app_theme_preset !== undefined) {
+    const cleanPreset = String(app_theme_preset).trim().toLowerCase();
+    if (!(ALLOWED_APP_THEME_PRESETS as readonly string[]).includes(cleanPreset)) {
+      res.status(400).json({
+        error: 'Invalid theme preset. Allowed themes: red, yellow, pale_white_pink, blue, emerald.',
+      });
+      return;
+    }
+  }
+
   // Theme Colors Validation
   if (theme_primary !== undefined && !isValidHex(theme_primary)) {
     res.status(400).json({ error: 'Primary color must be a valid hex color code (e.g. #6366f1).' });
@@ -4835,13 +5159,67 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     return;
   }
 
-  // Resolve Telegram URL synchronization when explicitly saved by admin
-  const resolvedVipTelegramUrl =
-    vip_telegram_url !== undefined
-      ? String(vip_telegram_url).trim()
-      : vip_purchase_url !== undefined
-      ? String(vip_purchase_url).trim()
-      : undefined;
+  // Smart dual-field alias resolution so editing EITHER alias persists without being overwritten by its sibling
+  const resolveAliasPair = (
+    primaryVal: unknown,
+    aliasVal: unknown,
+    curPrimary: string,
+    curAlias: string
+  ): string | undefined => {
+    const hasPrimary = primaryVal !== undefined;
+    const hasAlias = aliasVal !== undefined;
+    if (!hasPrimary && !hasAlias) return undefined;
+    const pStr = hasPrimary ? String(primaryVal).trim() : '';
+    const aStr = hasAlias ? String(aliasVal).trim() : '';
+    if (hasPrimary && !hasAlias) return pStr;
+    if (!hasPrimary && hasAlias) return aStr;
+    const pChanged = pStr !== (curPrimary || '').trim();
+    const aChanged = aStr !== (curAlias || '').trim();
+    if (pChanged && !aChanged) return pStr;
+    if (aChanged && !pChanged) return aStr;
+    return pStr;
+  };
+
+  const resolvedVipTelegramUrl = resolveAliasPair(
+    vip_telegram_url,
+    vip_purchase_url,
+    currentSettings.vip_telegram_url || '',
+    currentSettings.vip_purchase_url || ''
+  );
+
+  const resolvedSupportTitle = resolveAliasPair(
+    support_title,
+    support_button_label,
+    currentSettings.support_title || '',
+    currentSettings.support_button_label || ''
+  );
+
+  const resolvedDonationMessage = resolveAliasPair(
+    donation_message,
+    donation_description,
+    currentSettings.donation_message || '',
+    currentSettings.donation_description || ''
+  );
+
+  let validatedGraceHours: number | undefined = undefined;
+  if (req.body.vip_grace_period_hours !== undefined && req.body.vip_grace_period_hours !== '') {
+    const parsedGrace = Number(req.body.vip_grace_period_hours);
+    if (!Number.isFinite(parsedGrace) || parsedGrace < 0 || parsedGrace > 168) {
+      res.status(400).json({ error: 'VIP Grace Period must be between 0 and 168 hours.' });
+      return;
+    }
+    validatedGraceHours = Math.round(parsedGrace);
+  }
+
+  let validatedReferralRewardDays: number | undefined = undefined;
+  if (req.body.referral_reward_days !== undefined && req.body.referral_reward_days !== '') {
+    const parsedReward = Number(req.body.referral_reward_days);
+    if (!Number.isFinite(parsedReward) || parsedReward < 1 || parsedReward > 90) {
+      res.status(400).json({ error: 'Referral Reward Days must be between 1 and 90.' });
+      return;
+    }
+    validatedReferralRewardDays = Math.round(parsedReward);
+  }
 
   try {
     const updated = await storage.updateSettings({
@@ -4849,6 +5227,18 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       ...(shortener_url !== undefined && { shortener_url: String(shortener_url).trim() }),
       ...(tutorial_video_url !== undefined && { tutorial_video_url: String(tutorial_video_url).trim() }),
       ...(telegram_channel_url !== undefined && { telegram_channel_url: String(telegram_channel_url).trim() }),
+      ...(study_blunder_telegram_url !== undefined && {
+        study_blunder_telegram_url: String(study_blunder_telegram_url).trim(),
+      }),
+      ...(study_blunder_telegram_label !== undefined && {
+        study_blunder_telegram_label: String(study_blunder_telegram_label).trim().slice(0, 60) || 'Study Blunder Telegram',
+      }),
+      ...(study_fox_telegram_url !== undefined && {
+        study_fox_telegram_url: String(study_fox_telegram_url).trim(),
+      }),
+      ...(study_fox_telegram_label !== undefined && {
+        study_fox_telegram_label: String(study_fox_telegram_label).trim().slice(0, 60) || 'Study Fox Telegram',
+      }),
       ...(telegram_popup_enabled !== undefined && { telegram_popup_enabled: Boolean(telegram_popup_enabled) }),
       ...(telegram_popup_title !== undefined && { telegram_popup_title: String(telegram_popup_title).trim().slice(0, 120) }),
       ...(telegram_popup_message !== undefined && { telegram_popup_message: String(telegram_popup_message).trim().slice(0, 600) }),
@@ -4859,7 +5249,9 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       ...(telegram_popup_show_on_resume !== undefined && { telegram_popup_show_on_resume: Boolean(telegram_popup_show_on_resume) }),
       ...(maintenance_mode !== undefined && { maintenance_mode: Boolean(maintenance_mode) }),
       ...(login_enabled !== undefined && { login_enabled: Boolean(login_enabled) }),
-      ...(key_expiry_hours !== undefined && { key_expiry_hours: Number(key_expiry_hours) }),
+      ...(validatedKeyExpiryHours !== undefined && { key_expiry_hours: validatedKeyExpiryHours }),
+      ...(validatedFreeDuration !== undefined && { free_access_duration: validatedFreeDuration }),
+      ...(validatedFreeUnit !== undefined && { free_access_unit: validatedFreeUnit }),
       ...(resolvedVipTelegramUrl !== undefined && {
         vip_purchase_url: resolvedVipTelegramUrl,
         vip_telegram_url: resolvedVipTelegramUrl,
@@ -4870,8 +5262,43 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
         vip_payment_instructions: String(vip_payment_instructions).trim().slice(0, 1000),
       }),
       ...(vip_payment_utr_required !== undefined && { vip_payment_utr_required: Boolean(vip_payment_utr_required) }),
+      ...(home_single_vip_label !== undefined && {
+        home_single_vip_label: String(home_single_vip_label).trim().slice(0, 40) || 'VIP',
+      }),
+      ...(home_single_vip_price !== undefined && home_single_vip_price !== '' && Number.isFinite(Number(home_single_vip_price)) && {
+        home_single_vip_price: Math.min(1000000, Math.max(0, Number(home_single_vip_price))),
+      }),
+      ...(home_single_vip_duration_days !== undefined && home_single_vip_duration_days !== '' && Number.isFinite(Number(home_single_vip_duration_days)) && {
+        home_single_vip_duration_days: Math.min(3650, Math.max(1, Math.round(Number(home_single_vip_duration_days)))),
+      }),
+      ...(home_single_vip_destination !== undefined && {
+        home_single_vip_destination:
+          home_single_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_single_vip',
+      }),
+      ...(home_single_vip_url !== undefined && {
+        home_single_vip_url: String(home_single_vip_url).trim(),
+      }),
+      ...(home_all_vip_label !== undefined && {
+        home_all_vip_label: String(home_all_vip_label).trim().slice(0, 40) || 'ALL VIP',
+      }),
+      ...(home_all_vip_price !== undefined && home_all_vip_price !== '' && Number.isFinite(Number(home_all_vip_price)) && {
+        home_all_vip_price: Math.min(1000000, Math.max(0, Number(home_all_vip_price))),
+      }),
+      ...(home_all_vip_duration_days !== undefined && home_all_vip_duration_days !== '' && Number.isFinite(Number(home_all_vip_duration_days)) && {
+        home_all_vip_duration_days: Math.min(3650, Math.max(1, Math.round(Number(home_all_vip_duration_days)))),
+      }),
+      ...(home_all_vip_destination !== undefined && {
+        home_all_vip_destination:
+          home_all_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_all_vip',
+      }),
+      ...(home_all_vip_url !== undefined && {
+        home_all_vip_url: String(home_all_vip_url).trim(),
+      }),
       ...(app_name !== undefined && { app_name: String(app_name).trim() }),
       ...(app_logo_url !== undefined && { app_logo_url: String(app_logo_url).trim() }),
+      ...(app_theme_preset !== undefined && {
+        app_theme_preset: normalizeAppThemePreset(app_theme_preset),
+      }),
       ...(theme_primary !== undefined && { theme_primary: String(theme_primary).trim() }),
       ...(theme_secondary !== undefined && { theme_secondary: String(theme_secondary).trim() }),
       ...(theme_background !== undefined && { theme_background: String(theme_background).trim() }),
@@ -4887,13 +5314,9 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       ...(validatedSlideInterval !== undefined && { announcement_slide_interval_seconds: validatedSlideInterval }),
       ...(support_enabled !== undefined && { support_enabled: Boolean(support_enabled) }),
       ...(support_url !== undefined && { support_url: String(support_url).trim() }),
-      ...(support_button_label !== undefined && {
-        support_button_label: String(support_button_label).trim().slice(0, 80),
-        support_title: String(support_button_label).trim().slice(0, 80),
-      }),
-      ...(support_title !== undefined && {
-        support_title: String(support_title).trim().slice(0, 80),
-        support_button_label: String(support_title).trim().slice(0, 80),
+      ...(resolvedSupportTitle !== undefined && {
+        support_title: resolvedSupportTitle.slice(0, 80),
+        support_button_label: resolvedSupportTitle.slice(0, 80),
       }),
       ...(support_description !== undefined && { support_description: String(support_description).trim().slice(0, 400) }),
       ...(support_image_url !== undefined && { support_image_url: String(support_image_url).trim() }),
@@ -4901,13 +5324,9 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       ...(donation_url !== undefined && { donation_url: String(donation_url).trim() }),
       ...(donation_button_text !== undefined && { donation_button_text: String(donation_button_text).trim().slice(0, 80) }),
       ...(donation_title !== undefined && { donation_title: String(donation_title).trim().slice(0, 120) }),
-      ...(donation_description !== undefined && {
-        donation_description: String(donation_description).trim().slice(0, 500),
-        donation_message: String(donation_description).trim().slice(0, 500),
-      }),
-      ...(donation_message !== undefined && {
-        donation_message: String(donation_message).trim().slice(0, 500),
-        donation_description: String(donation_message).trim().slice(0, 500),
+      ...(resolvedDonationMessage !== undefined && {
+        donation_message: resolvedDonationMessage.slice(0, 500),
+        donation_description: resolvedDonationMessage.slice(0, 500),
       }),
       ...(donation_qr_url !== undefined && { donation_qr_url: String(donation_qr_url).trim() }),
       ...(custom_popup_enabled !== undefined && { custom_popup_enabled: Boolean(custom_popup_enabled) }),
@@ -4932,12 +5351,8 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       ...(retention_failed_payments_days !== undefined && {
         retention_failed_payments_days: Math.min(3650, Math.max(1, Math.round(Number(retention_failed_payments_days) || 30))),
       }),
-      ...(req.body.vip_grace_period_hours !== undefined && {
-        vip_grace_period_hours: Math.min(168, Math.max(0, Math.round(Number(req.body.vip_grace_period_hours) || 24))),
-      }),
-      ...(req.body.referral_reward_days !== undefined && {
-        referral_reward_days: Math.min(90, Math.max(1, Math.round(Number(req.body.referral_reward_days) || 7))),
-      }),
+      ...(validatedGraceHours !== undefined && { vip_grace_period_hours: validatedGraceHours }),
+      ...(validatedReferralRewardDays !== undefined && { referral_reward_days: validatedReferralRewardDays }),
       ...(req.body.referral_program_enabled !== undefined && {
         referral_program_enabled: Boolean(req.body.referral_program_enabled),
       }),
@@ -4961,6 +5376,7 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
       });
     }
 
+    broadcastSettingsUpdate();
     res.json({ settings: updated, message: 'Settings saved successfully.' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to save settings in database.';
@@ -4978,6 +5394,168 @@ app.post('/api/admin/settings', authenticate, requireAdminPermission('settings',
     }
     res.status(500).json({ error: msg });
   }
+});
+
+// ==========================================================
+// STUDENT GROWTH FEATURES ROUTES
+// (Exam Timer, Offer Board, 30-Day Daily Motivation,
+//  XP Leaderboard, Study Logs & Sunday Parents Report Card)
+// ==========================================================
+
+app.get('/api/offer-board', (_req, res) => {
+  res.json({ offers: storage.getOfferBoard(true) });
+});
+
+app.get('/api/daily-motivation/today', (_req, res) => {
+  res.json(storage.getTodayDailyMotivation());
+});
+
+app.get('/api/leaderboard', optionalAuthenticate, (req: AuthenticatedRequest, res) => {
+  const userId = req.user?.id;
+  res.json(storage.getXpLeaderboard(userId));
+});
+
+app.get('/api/student/exam-timer', authenticate, (req: AuthenticatedRequest, res) => {
+  const timer = storage.getStudentExamTimer(req.user!.id);
+  res.json({ timer });
+});
+
+app.put('/api/student/exam-timer', authenticate, (req: AuthenticatedRequest, res) => {
+  try {
+    const { exam_name, exam_datetime } = req.body || {};
+    const timer = storage.setStudentExamTimer(req.user!.id, String(exam_name || ''), String(exam_datetime || ''));
+    res.json({ timer, message: 'Exam timer saved successfully!' });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to save exam timer.' });
+  }
+});
+
+app.get('/api/student/parents-report', authenticate, (req: AuthenticatedRequest, res) => {
+  try {
+    const report = storage.getParentsReportCard(req.user!.id);
+    res.json({ report });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to load parents report card.' });
+  }
+});
+
+app.put('/api/student/parents-report/settings', authenticate, (req: AuthenticatedRequest, res) => {
+  try {
+    const { parent_name, parent_whatsapp, parent_email, auto_sunday_enabled } = req.body || {};
+    storage.saveParentReportSettings(req.user!.id, {
+      parent_name,
+      parent_whatsapp,
+      parent_email,
+      auto_sunday_enabled,
+    });
+    const report = storage.getParentsReportCard(req.user!.id);
+    res.json({ report, message: 'Parent report settings saved!' });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to save parent settings.' });
+  }
+});
+
+app.post('/api/student/study-session', authenticate, (req: AuthenticatedRequest, res) => {
+  try {
+    const { minutes, source, note } = req.body || {};
+    const parsedMinutes = Number(minutes);
+    if (!Number.isFinite(parsedMinutes) || parsedMinutes < 1 || parsedMinutes > 720) {
+      res.status(400).json({ error: 'Please enter study time between 1 and 720 minutes.' });
+      return;
+    }
+    const cleanSource = source === 'timer' || source === 'platform' ? source : 'manual';
+    const result = storage.logStudyMinutes(req.user!.id, parsedMinutes, cleanSource, String(note || ''));
+    const report = storage.getParentsReportCard(req.user!.id);
+    res.json({
+      success: true,
+      log: result.log,
+      xp_earned: result.xp_earned,
+      report,
+      message: `Logged ${result.log.minutes} mins (+${result.xp_earned} XP)!`,
+    });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to log study session.' });
+  }
+});
+
+app.get('/api/admin/offer-board', authenticate, requireAdmin, (_req, res) => {
+  res.json({ offers: storage.getOfferBoard(false) });
+});
+
+app.put('/api/admin/offer-board', authenticate, requireAdmin, (req: AuthenticatedRequest, res) => {
+  try {
+    const items = Array.isArray(req.body?.offers) ? req.body.offers : [];
+    const saved = storage.saveOfferBoard(items);
+    broadcastSettingsUpdate();
+    res.json({ offers: saved, message: 'Offer Board updated and published live!' });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to update Offer Board.' });
+  }
+});
+
+app.get('/api/admin/daily-motivation', authenticate, requireAdmin, (_req, res) => {
+  res.json({
+    motivations: storage.getDailyMotivations(),
+    today: storage.getTodayDailyMotivation(),
+  });
+});
+
+app.put('/api/admin/daily-motivation', authenticate, requireAdmin, (req: AuthenticatedRequest, res) => {
+  try {
+    const items = Array.isArray(req.body?.motivations) ? req.body.motivations : [];
+    const saved = storage.saveDailyMotivations(items);
+    broadcastSettingsUpdate();
+    res.json({
+      motivations: saved,
+      today: storage.getTodayDailyMotivation(),
+      message: '30-Day Daily Motivation schedule saved!',
+    });
+  } catch (err: unknown) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to save Daily Motivation schedule.' });
+  }
+});
+
+// Cloud DB Persistence Status, Migration SQL Viewer & 1-Click Sync (Admin Only)
+app.get('/api/admin/storage/status', authenticate, requireAdmin, (_req, res) => {
+  res.json({
+    storage: storage.getStorageHealth(),
+    counts: {
+      users: storage.getUsers().length,
+      platforms: storage.getPlatforms(false).length,
+      vip_plans: storage.getVipPlans(false).length,
+      announcements: storage.getAnnouncements(false).length,
+      payments: storage.getPayments().length,
+    },
+  });
+});
+
+app.get('/api/admin/storage/migration-sql', authenticate, requireAdmin, (_req, res) => {
+  try {
+    const sqlPath = path.resolve(process.cwd(), 'supabase_migration.sql');
+    if (!fs.existsSync(sqlPath)) {
+      res.status(404).json({ error: 'supabase_migration.sql file not found on server.' });
+      return;
+    }
+    const sql = fs.readFileSync(sqlPath, 'utf-8');
+    res.json({ sql });
+  } catch (err: unknown) {
+    res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to load migration SQL.',
+    });
+  }
+});
+
+app.post('/api/admin/storage/sync-supabase', authenticate, requireAdmin, async (_req, res) => {
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const result = await storage.syncAllLocalToSupabase(supabaseUrl, supabaseKey);
+  if (!result.synced) {
+    res.status(400).json(result);
+    return;
+  }
+  broadcastSettingsUpdate();
+  broadcastPlatformsUpdate();
+  res.json(result);
 });
 
 // Generic Admin Asset Upload Endpoint (for Support Image, VIP Payment QR, Donation QR, Custom Popup Image, Platform Logos)
@@ -5088,6 +5666,7 @@ app.post('/api/admin/upload-asset', authenticate, requireAdmin, async (req, res)
     let updatedSettings = undefined;
     if (settingKey && allowedSettingKeys.includes(settingKey)) {
       updatedSettings = await storage.updateSettings({ [settingKey]: assetUrl });
+      broadcastSettingsUpdate();
     }
 
     res.json({
@@ -5226,6 +5805,7 @@ app.post('/api/admin/upload-logo', authenticate, requireAdmin, async (req, res) 
 
     // Persist new logo URL to database settings immediately
     const updated = await storage.updateSettings({ app_logo_url: finalLogoUrl });
+    broadcastSettingsUpdate();
 
     res.json({
       success: true,
@@ -5540,11 +6120,11 @@ app.get('/api/festivals/stream', (req, res) => {
   });
 });
 
-function broadcastVipStatusUpdate(data: Record<string, unknown>): void {
+function broadcastSseEvent(eventName: string, data: unknown): void {
   if (festivalSseClients.size === 0) return;
   try {
     const payload = JSON.stringify(data);
-    const frame = `event: vip_status_update\ndata: ${payload}\n\n`;
+    const frame = `event: ${eventName}\ndata: ${payload}\n\n`;
     for (const client of festivalSseClients) {
       try {
         client.write(frame);
@@ -5557,21 +6137,32 @@ function broadcastVipStatusUpdate(data: Record<string, unknown>): void {
   }
 }
 
+function broadcastSettingsUpdate(): void {
+  broadcastSseEvent('settings_update', buildPublicSettingsPayload());
+}
+
+function broadcastPlatformsUpdate(): void {
+  broadcastSseEvent('platforms_update', { updated_at: new Date().toISOString() });
+}
+
+function broadcastAnnouncementsUpdate(): void {
+  broadcastSseEvent('announcements_update', { updated_at: new Date().toISOString() });
+}
+
+function broadcastVipPlansUpdate(): void {
+  broadcastSseEvent('vip_plans_update', { updated_at: new Date().toISOString() });
+}
+
+function broadcastVipBatchesUpdate(): void {
+  broadcastSseEvent('vip_batches_update', { updated_at: new Date().toISOString() });
+}
+
+function broadcastVipStatusUpdate(data: Record<string, unknown>): void {
+  broadcastSseEvent('vip_status_update', data);
+}
+
 function broadcastVipFeaturesUpdate(): void {
-  if (festivalSseClients.size === 0) return;
-  try {
-    const payload = JSON.stringify(storage.getVipFeatureManagementState());
-    const frame = `event: vip_features_update\ndata: ${payload}\n\n`;
-    for (const client of festivalSseClients) {
-      try {
-        client.write(frame);
-      } catch {
-        festivalSseClients.delete(client);
-      }
-    }
-  } catch {
-    // Non-fatal broadcast error
-  }
+  broadcastSseEvent('vip_features_update', storage.getVipFeatureManagementState());
 }
 
 // Admin: Get full 15-festival catalog and master toggle state
@@ -6348,6 +6939,7 @@ app.post('/api/admin/referrals/global-switch', authenticate, requireReferralMana
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '127.0.0.1';
     storage.setReferralProgramGlobalSwitch(enabled, caller, clientIp);
     await storage.syncSettingsToSupabase();
+    broadcastSettingsUpdate();
     res.json({
       success: true,
       referral_program_enabled: storage.isReferralProgramEnabled(),
@@ -6386,6 +6978,7 @@ app.put('/api/admin/referrals/discount-config', authenticate, requireReferralMan
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '127.0.0.1';
     const config = storage.updateReferralDiscountConfig(req.body || {}, caller, clientIp);
     await storage.syncSettingsToSupabase();
+    broadcastSettingsUpdate();
     res.json({
       success: true,
       discount_config: config,

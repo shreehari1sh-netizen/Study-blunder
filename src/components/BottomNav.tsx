@@ -13,48 +13,43 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
     { id: 'home', label: 'HOME', icon: Home },
     { id: 'vip', label: 'VIP', icon: Crown },
     { id: 'profile', label: 'PROFILE', icon: User },
-    { id: 'vip_dashboard', label: 'VIP DASHBOARD', icon: LayoutDashboard },
+    { id: 'vip_dashboard', label: 'VIP HUB', icon: LayoutDashboard },
   ];
 
   return (
     <nav
-      style={{ backgroundColor: 'var(--theme-bg, #090D16)' }}
-      className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-lg border-t border-slate-800/80 max-w-lg mx-auto shadow-2xl"
+      aria-label="Primary Navigation"
+      className="fixed bottom-2.5 inset-x-3 z-40 max-w-xl mx-auto rounded-2xl bg-[#141414]/96 backdrop-blur-md border border-[#454545] shadow-[0_14px_36px_rgba(5,14,32,0.45)]"
     >
-      <div className="grid grid-cols-4 h-16 items-center px-2">
+      <div className="grid grid-cols-4 min-h-[62px] items-stretch p-1.5 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
-          const isVipDash = tab.id === 'vip_dashboard';
 
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => onChangeTab(tab.id)}
-              style={{
-                color: isActive
-                  ? isVipDash
-                    ? '#fbbf24'
-                    : 'var(--theme-primary, #818cf8)'
-                  : undefined,
-              }}
-              className={`flex flex-col items-center justify-center h-full relative transition-all duration-200 px-1 ${
-                isActive ? '' : isVipDash ? 'text-amber-300/80 hover:text-amber-200' : 'text-slate-400 hover:text-slate-200'
+              aria-current={isActive ? 'page' : undefined}
+              className={`relative flex flex-col items-center justify-center min-h-[52px] rounded-xl border transition-all duration-150 px-1 active:scale-95 ${
+                isActive
+                  ? 'bg-[#FF2525]/14 border-[#FF2525]/65 text-[#FF2525]'
+                  : 'border-transparent text-[#929292] hover:text-[#F5F5F5] hover:bg-[#1D1D1D]'
               }`}
             >
               {isActive && (
                 <span
-                  style={{
-                    backgroundColor: isVipDash ? '#fbbf24' : 'var(--theme-primary, #818cf8)',
-                    boxShadow: isVipDash
-                      ? '0 0 8px #fbbf24'
-                      : '0 0 8px var(--theme-primary, #818cf8)',
-                  }}
-                  className="absolute top-1.5 w-1.5 h-1 rounded-full"
+                  aria-hidden="true"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2.5px] bg-[#FF2525]"
                 />
               )}
-              <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110 stroke-[2.2]' : 'stroke-[1.8]'}`} />
-              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider mt-1 truncate max-w-full">
+              <Icon
+                className={`w-[19px] h-[19px] transition-transform duration-150 ${
+                  isActive ? 'scale-105 stroke-[2.3]' : 'stroke-[1.8]'
+                }`}
+              />
+              <span className="font-display text-[10px] font-extrabold tracking-[0.09em] mt-1 truncate max-w-full">
                 {tab.label}
               </span>
             </button>
@@ -64,5 +59,4 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
     </nav>
   );
 };
-
 

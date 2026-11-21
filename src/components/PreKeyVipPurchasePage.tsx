@@ -290,7 +290,7 @@ export const PreKeyVipPurchasePage: React.FC<PreKeyVipPurchasePageProps> = ({
     setPriceUpdateNotice(null);
 
     if (!user) {
-      setFormError('Please log in to your STUDY FOX account before submitting payment proof.');
+      setFormError(`Please log in to your ${settings?.app_name || 'STUDY BLUNDER'} account before submitting payment proof.`);
       return;
     }
 
@@ -377,448 +377,462 @@ export const PreKeyVipPurchasePage: React.FC<PreKeyVipPurchasePageProps> = ({
   };
 
   return (
-    <div className="bg-[#0C1222] border border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-left animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92vh] overflow-y-auto">
-      {/* Top Bar: Back to Key Page + VIP Badge */}
-      <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-slate-800">
-        <button
-          type="button"
-          onClick={onBackToKeyPage}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-200 text-xs font-bold transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
-          <span>← Back to Key Page</span>
-        </button>
+    <div className="ra-panel-red ra-corners-orange max-w-lg w-full rounded-2xl overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.9)] relative text-left my-auto max-h-[92vh] flex flex-col">
+      {/* Top Hazard Accent */}
+      <div className="ra-hazard-bar h-1.5 w-full shrink-0" />
 
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-extrabold uppercase tracking-wider">
-          <Crown className="w-3.5 h-3.5 text-amber-400" />
-          <span>Pre-Key VIP Store</span>
-        </span>
-      </div>
+      <div className="p-5 sm:p-6 overflow-y-auto">
+        {/* Top Bar: Back to Key Page + VIP Badge */}
+        <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-[#454545]/70">
+          <button
+            type="button"
+            onClick={onBackToKeyPage}
+            className="min-h-[40px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#090909] hover:bg-[#1D1D1D] border border-[#454545] hover:border-[#FF2525]/60 text-[#F5F5F5] text-xs font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-[#FF2525]" />
+            <span>Back to Key Page</span>
+          </button>
 
-      {/* Header */}
-      <div className="mt-4 text-center">
-        <h2 className="text-lg sm:text-xl font-extrabold text-white flex items-center justify-center gap-2">
-          <Crown className="w-5 h-5 text-amber-400" />
-          <span>Upgrade to Study Fox VIP</span>
-        </h2>
-        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-          Skip VPLINK key generation forever, unlock all VIP batches, and get instant access to all 14 VIP Student Hub features.
-        </p>
-      </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF762E]/15 border border-[#FF762E]/50 text-[#FF762E] text-[10px] font-mono-tech font-bold uppercase tracking-wider">
+            <Crown className="w-3.5 h-3.5 text-[#FF762E]" />
+            <span>Pre-Key VIP Store</span>
+          </span>
+        </div>
 
-      {/* Active Pending Payment Request Banner (Duplicate Payment Prevention) */}
-      {(activePendingPayment || submittedClaim) && (
-        <div className="mt-4 p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 space-y-2.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
-                Payment Pending Verification
-              </span>
-            </div>
-            <span className="text-[10px] font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/40">
-              {(activePendingPayment || submittedClaim)?.request_id ||
-                (activePendingPayment || submittedClaim)?.id}
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-200 leading-relaxed">
-            Your VIP payment request for{' '}
-            <strong className="text-white">
-              {(activePendingPayment || submittedClaim)?.plan_title || 'VIP Membership'}
-            </strong>{' '}
-            (₹{(activePendingPayment || submittedClaim)?.amount}) is currently awaiting Admin verification.
+        {/* Header */}
+        <div className="mt-4 text-center">
+          <h2 className="font-display text-lg sm:text-xl font-black text-[#F5F5F5] uppercase tracking-wide flex items-center justify-center gap-2">
+            <Crown className="w-5 h-5 text-[#FF762E]" />
+            <span>Upgrade to {settings?.app_name || 'STUDY BLUNDER'} VIP</span>
+          </h2>
+          <p className="text-xs text-[#929292] mt-1.5 leading-relaxed">
+            Skip VPLINK key generation forever, unlock all VIP batches, and get instant access to all 14 VIP Student Hub features.
           </p>
+          {referrerCodeUsed && (
+            <p className="mt-1.5 text-[11px] font-mono-tech text-[#FF762E] font-bold">
+              Referral applied: {referrerCodeUsed}
+            </p>
+          )}
+        </div>
 
-          <div className="p-2.5 rounded-xl bg-[#070B14]/80 border border-slate-800/90 flex items-center justify-between gap-2 text-[11px]">
-            <div>
-              <span className="text-slate-400 block">Payment Request ID:</span>
-              <span className="font-mono font-bold text-amber-300">
+        {/* Active Pending Payment Request Banner */}
+        {(activePendingPayment || submittedClaim) && (
+          <div className="mt-4 p-4 rounded-xl bg-[#FF762E]/12 border border-[#FF762E]/50 space-y-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#FF762E] shrink-0" />
+                <span className="text-xs font-display font-extrabold uppercase tracking-wider text-[#FF762E]">
+                  Payment Pending Verification
+                </span>
+              </div>
+              <span className="text-[10px] font-mono-tech font-bold px-2 py-0.5 rounded bg-[#090909] text-[#FF762E] border border-[#FF762E]/40">
                 {(activePendingPayment || submittedClaim)?.request_id ||
                   (activePendingPayment || submittedClaim)?.id}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={checkVipStatusAndUnlock}
-              disabled={checkingActivation}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-[11px] inline-flex items-center gap-1.5 transition-colors disabled:opacity-60"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${checkingActivation ? 'animate-spin' : ''}`} />
-              <span>{checkingActivation ? 'Checking...' : 'Check Status'}</span>
-            </button>
-          </div>
 
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            As soon as the Admin approves your payment, your VIP membership activates automatically and unlocks Home without generating a key.
-          </p>
-        </div>
-      )}
+            <p className="text-xs text-[#F5F5F5] leading-relaxed">
+              Your VIP payment request for{' '}
+              <strong className="text-[#F5F5F5]">
+                {(activePendingPayment || submittedClaim)?.plan_title || 'VIP Membership'}
+              </strong>{' '}
+              (₹{(activePendingPayment || submittedClaim)?.amount}) is currently awaiting Admin verification.
+            </p>
 
-      {/* Rejected Payment Notice (if latest was rejected and no active pending) */}
-      {!activePendingPayment && latestRejectedPayment && (
-        <div className="mt-4 p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200 space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="font-extrabold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-rose-400" />
-              <span>Previous Request Rejected</span>
-            </span>
-            <span className="text-[10px] font-mono text-rose-300">
-              {latestRejectedPayment.request_id || latestRejectedPayment.id}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-300">
-            Reason: {latestRejectedPayment.rejection_reason || latestRejectedPayment.admin_note || 'Verification did not match payment records.'}
-          </p>
-          <p className="text-[11px] text-amber-300 font-semibold">
-            You can submit a new payment verification request below.
-          </p>
-        </div>
-      )}
-
-      {telegramNotice && (
-        <div className="mt-3 p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs flex items-start justify-between gap-2">
-          <span>{telegramNotice}</span>
-          <button type="button" onClick={() => setTelegramNotice(null)}>
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* VIP Plans List (Synced with In-App VIP Plans) */}
-      <div className="mt-4 space-y-3.5">
-        {loadingPlans || loadingPayments ? (
-          <div className="h-44 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse" />
-        ) : (
-          plans.map((plan) => {
-            const isSelected = selectedPlan?.id === plan.id;
-            const hasOriginalPrice =
-              plan.original_price_inr && Number(plan.original_price_inr) > Number(plan.price_inr);
-            const bonusDays = Number(plan.bonus_days || 0);
-            const refPrev = referralPreviews[plan.id];
-            const hasRefDiscount = Boolean(refPrev && refPrev.eligible && refPrev.referral_discount_applied > 0);
-            const displayPayable = hasRefDiscount ? refPrev.final_payable_amount : plan.price_inr;
-
-            return (
-              <div
-                key={plan.id}
-                onClick={() => handleSelectPlan(plan)}
-                className={`relative rounded-2xl border p-4 transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#10192E] border-amber-500/80 shadow-lg shadow-amber-950/30'
-                    : 'bg-[#090E1A] border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                {/* Top Badges */}
-                <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      {plan.duration_days ? `${plan.duration_days} Days` : `${plan.duration_months || 1} Months`}
-                    </span>
-                    {bonusDays > 0 && (
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
-                        <Gift className="w-3 h-3" />+{bonusDays} Bonus Days
-                      </span>
-                    )}
-                    {plan.discount_label && (
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 inline-flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
-                        {plan.discount_label}
-                      </span>
-                    )}
-                    {hasRefDiscount && refPrev && (
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1">
-                        <Gift className="w-3 h-3" />
-                        {refPrev.discount_label || `Referral -₹${refPrev.referral_discount_applied}`}
-                      </span>
-                    )}
-                  </div>
-
-                  {plan.badge_label && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider">
-                      <Sparkles className="w-2.5 h-2.5" />
-                      {plan.badge_label}
-                    </span>
-                  )}
-                </div>
-
-                {/* Title & Pricing */}
-                <div className="flex items-baseline justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-white">{plan.title}</h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Total Validity: {Number(plan.duration_days || 30) + bonusDays} Days Direct Access
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {(hasOriginalPrice || hasRefDiscount) && (
-                      <span className="text-xs text-slate-500 line-through mr-1.5">
-                        ₹{hasRefDiscount ? plan.price_inr : plan.original_price_inr}
-                      </span>
-                    )}
-                    <span className="text-2xl font-extrabold text-amber-400 tabular-nums">
-                      ₹{displayPayable}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Part H: Referral Discount Breakdown Box */}
-                {hasRefDiscount && refPrev && (
-                  <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 grid grid-cols-3 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Original Price</span>
-                      <strong className="text-slate-200 font-mono">₹{refPrev.original_plan_price}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Referral Discount</span>
-                      <strong className="text-emerald-400 font-mono">-₹{refPrev.referral_discount_applied}</strong>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-slate-400 block text-[10px]">Final Payable</span>
-                      <strong className="text-amber-300 font-mono">₹{refPrev.final_payable_amount}</strong>
-                    </div>
-                  </div>
-                )}
-
-                {/* Features */}
-                {Array.isArray(plan.features) && plan.features.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {plan.features.map((feat, i) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[11px] text-slate-300">
-                        <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="truncate">{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="mt-3.5 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectTelegramOption(plan);
-                    }}
-                    className="py-2 px-3 rounded-xl font-extrabold text-[11px] uppercase tracking-wider border border-sky-500/40 bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Via Telegram</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectQrOption(plan);
-                    }}
-                    disabled={Boolean(activePendingPayment)}
-                    className="py-2 px-3 rounded-xl font-extrabold text-[11px] uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>{activePendingPayment ? 'Request Pending' : 'Pay via QR'}</span>
-                  </button>
-                </div>
+            <div className="p-2.5 rounded-xl bg-[#090909] border border-[#454545] flex items-center justify-between gap-2 text-[11px]">
+              <div>
+                <span className="text-[#929292] block text-[10px] font-mono-tech uppercase">Payment Request ID</span>
+                <span className="font-mono-tech font-bold text-[#FF762E]">
+                  {(activePendingPayment || submittedClaim)?.request_id ||
+                    (activePendingPayment || submittedClaim)?.id}
+                </span>
               </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* QR Code & Verification Section (Inline inside Pre-Key Page) */}
-      {activeOption === 'qr' && !activePendingPayment && selectedPlan && (
-        <div
-          ref={qrSectionRef}
-          className="mt-4 p-4 rounded-2xl bg-[#080D19] border border-amber-500/40 space-y-3.5 animate-in fade-in"
-        >
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <div>
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
-                Scan QR & Submit Proof ({selectedPlan.title})
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Amount to Pay: <strong className="text-white">₹{configuredAmount}</strong>
-              </p>
+              <button
+                type="button"
+                onClick={checkVipStatusAndUnlock}
+                disabled={checkingActivation}
+                className="min-h-[38px] px-3 py-1.5 rounded-lg bg-[#FF762E] hover:bg-[#ff8a4c] text-[#090909] font-display font-extrabold text-[11px] uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors disabled:opacity-60"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${checkingActivation ? 'animate-spin' : ''}`} />
+                <span>{checkingActivation ? 'Checking...' : 'Check Status'}</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOption(null);
-                setShowVerificationForm(false);
-              }}
-              className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
-            >
+
+            <p className="text-[11px] text-[#C5C5C5] leading-relaxed">
+              As soon as the Admin approves your payment, your VIP membership activates automatically and unlocks Home without generating a key.
+            </p>
+          </div>
+        )}
+
+        {/* Rejected Payment Notice */}
+        {!activePendingPayment && latestRejectedPayment && (
+          <div className="mt-4 p-3.5 rounded-xl bg-[#FF2525]/12 border border-[#FF2525]/55 text-xs text-[#F5F5F5] space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-display font-extrabold uppercase tracking-wider text-[#FF2525] flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-[#FF2525]" />
+                <span>Previous Request Rejected</span>
+              </span>
+              <span className="text-[10px] font-mono-tech text-[#FF2525]">
+                {latestRejectedPayment.request_id || latestRejectedPayment.id}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#C5C5C5]">
+              Reason: {latestRejectedPayment.rejection_reason || latestRejectedPayment.admin_note || 'Verification did not match payment records.'}
+            </p>
+            <p className="text-[11px] text-[#FF762E] font-semibold">
+              You can submit a new payment verification request below.
+            </p>
+          </div>
+        )}
+
+        {telegramNotice && (
+          <div className="mt-3 p-3 rounded-xl bg-[#FF762E]/12 border border-[#FF762E]/50 text-[#F5F5F5] text-xs flex items-start justify-between gap-2">
+            <span>{telegramNotice}</span>
+            <button type="button" onClick={() => setTelegramNotice(null)} className="text-[#FF762E]">
               <X className="w-4 h-4" />
             </button>
           </div>
+        )}
 
-          {!configuredQrUrl ? (
-            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-center text-xs text-slate-300">
-              Payment QR code is not uploaded yet. Please use Via Telegram or contact Support.
-            </div>
+        {/* VIP Plans List */}
+        <div className="mt-4 space-y-3.5">
+          {loadingPlans || loadingPayments ? (
+            <div className="h-44 rounded-xl bg-[#090909] border border-[#454545] animate-pulse" />
           ) : (
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="bg-white p-2.5 rounded-2xl shadow-md max-w-[190px] w-full">
-                <img
-                  src={configuredQrUrl}
-                  alt="Official VIP Payment QR"
-                  className="w-full h-auto max-h-[175px] object-contain rounded-lg"
-                />
-              </div>
+            plans.map((plan) => {
+              const isSelected = selectedPlan?.id === plan.id;
+              const hasOriginalPrice =
+                plan.original_price_inr && Number(plan.original_price_inr) > Number(plan.price_inr);
+              const bonusDays = Number(plan.bonus_days || 0);
+              const refPrev = referralPreviews[plan.id];
+              const hasRefDiscount = Boolean(refPrev && refPrev.eligible && refPrev.referral_discount_applied > 0);
+              const displayPayable = hasRefDiscount ? refPrev.final_payable_amount : plan.price_inr;
 
-              {configuredInstructions && (
-                <div className="w-full p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-left text-[11px] text-slate-300 whitespace-pre-line">
-                  {configuredInstructions}
-                </div>
-              )}
-
-              {!showVerificationForm && (
-                <button
-                  type="button"
-                  onClick={() => setShowVerificationForm(true)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
+              return (
+                <div
+                  key={plan.id}
+                  onClick={() => handleSelectPlan(plan)}
+                  className={`relative rounded-xl border p-4 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#1D1D1D] border-[#FF2525] ra-corners-red shadow-[0_0_24px_rgba(255,37,37,0.16)]'
+                      : 'bg-[#090909] border-[#454545] hover:border-[#C5C5C5]/60'
+                  }`}
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>I Have Paid — Submit Proof</span>
-                </button>
-              )}
-            </div>
-          )}
+                  {/* Top Badges */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-mono-tech font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF2525]/15 text-[#FF2525] border border-[#FF2525]/45">
+                        {plan.duration_days ? `${plan.duration_days} Days` : `${plan.duration_months || 1} Months`}
+                      </span>
+                      {bonusDays > 0 && (
+                        <span className="text-[10px] font-mono-tech font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF762E]/15 text-[#FF762E] border border-[#FF762E]/45 inline-flex items-center gap-1">
+                          <Gift className="w-3 h-3" />+{bonusDays} Bonus Days
+                        </span>
+                      )}
+                      {plan.discount_label && (
+                        <span className="text-[10px] font-mono-tech font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#141414] text-[#F5F5F5] border border-[#454545] inline-flex items-center gap-1">
+                          <Tag className="w-3 h-3 text-[#FF762E]" />
+                          {plan.discount_label}
+                        </span>
+                      )}
+                      {hasRefDiscount && refPrev && (
+                        <span className="text-[10px] font-mono-tech font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FF762E]/20 text-[#FF762E] border border-[#FF762E]/50 inline-flex items-center gap-1">
+                          <Gift className="w-3 h-3" />
+                          {refPrev.discount_label || `Referral -₹${refPrev.referral_discount_applied}`}
+                        </span>
+                      )}
+                    </div>
 
-          {configuredQrUrl && showVerificationForm && (
-            <form onSubmit={handleSubmitClaim} className="space-y-3 pt-2 border-t border-slate-800">
-              {priceUpdateNotice && (
-                <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-200 text-xs">
-                  {priceUpdateNotice}
+                    {plan.badge_label && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FF2525] text-[#F5F5F5] font-display font-extrabold text-[10px] uppercase tracking-wider">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        {plan.badge_label}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title & Pricing */}
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div>
+                      <h3 className="font-display text-sm font-black text-[#F5F5F5] uppercase tracking-wide">
+                        {plan.title}
+                      </h3>
+                      <p className="text-[11px] text-[#929292] mt-0.5">
+                        Total Validity: {Number(plan.duration_days || 30) + bonusDays} Days Direct Access
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {(hasOriginalPrice || hasRefDiscount) && (
+                        <span className="text-xs text-[#929292] line-through mr-1.5 font-mono-tech">
+                          ₹{hasRefDiscount ? plan.price_inr : plan.original_price_inr}
+                        </span>
+                      )}
+                      <span className="text-2xl font-display font-black text-[#FF2525] font-mono-tech">
+                        ₹{displayPayable}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Referral Discount Breakdown Box */}
+                  {hasRefDiscount && refPrev && (
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-[#141414] border border-[#FF762E]/45 grid grid-cols-3 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-[#929292] block text-[10px]">Original Price</span>
+                        <strong className="text-[#F5F5F5] font-mono-tech">₹{refPrev.original_plan_price}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[#929292] block text-[10px]">Referral Discount</span>
+                        <strong className="text-[#FF762E] font-mono-tech">-₹{refPrev.referral_discount_applied}</strong>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[#929292] block text-[10px]">Final Payable</span>
+                        <strong className="text-[#FF2525] font-mono-tech">₹{refPrev.final_payable_amount}</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Features */}
+                  {Array.isArray(plan.features) && plan.features.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-[#454545]/70 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {plan.features.map((feat, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-[#C5C5C5]">
+                          <Check className="w-3.5 h-3.5 text-[#FF2525] shrink-0" />
+                          <span className="truncate">{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-3.5 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectTelegramOption(plan);
+                      }}
+                      className="min-h-[42px] py-2 px-3 rounded-xl ra-btn-secondary text-[11px] flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5 text-[#FF762E]" />
+                      <span>Via Telegram</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectQrOption(plan);
+                      }}
+                      disabled={Boolean(activePendingPayment)}
+                      className="min-h-[42px] py-2 px-3 rounded-xl ra-btn-primary text-[11px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>{activePendingPayment ? 'Request Pending' : 'Pay via QR'}</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+              );
+            })
+          )}
+        </div>
 
+        {/* QR Code & Verification Section */}
+        {activeOption === 'qr' && !activePendingPayment && selectedPlan && (
+          <div
+            ref={qrSectionRef}
+            className="mt-4 p-4 rounded-xl bg-[#090909] border border-[#FF2525]/55 space-y-3.5"
+          >
+            <div className="flex items-center justify-between border-b border-[#454545]/70 pb-2.5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  1. Login Email Address <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={submittedEmail}
-                  onChange={(e) => setSubmittedEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
+                <h4 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#FF2525]">
+                  Scan QR & Submit Proof ({selectedPlan.title})
+                </h4>
+                <p className="text-[11px] text-[#929292]">
+                  Amount to Pay: <strong className="text-[#F5F5F5] font-mono-tech">₹{configuredAmount}</strong>
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveOption(null);
+                  setShowVerificationForm(false);
+                }}
+                aria-label="Close QR section"
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-[#141414] border border-[#454545] text-[#C5C5C5] hover:text-[#F5F5F5]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  2. Paid Amount (₹) <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  step="any"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
+            {!configuredQrUrl ? (
+              <div className="p-3.5 rounded-xl bg-[#141414] border border-[#454545] text-center text-xs text-[#929292]">
+                Payment QR code is not uploaded yet. Please use Via Telegram or contact Support.
               </div>
+            ) : (
+              <div className="flex flex-col items-center text-center space-y-3">
+                {/* Keep pure white frame strictly behind QR image for reliable UPI scanning */}
+                <div className="bg-white p-2.5 rounded-xl shadow-md max-w-[190px] w-full">
+                  <img
+                    src={configuredQrUrl}
+                    alt="Official VIP Payment QR"
+                    className="w-full h-auto max-h-[175px] object-contain rounded-lg"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  3. Payment Screenshot (JPG/PNG/WEBP) <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleScreenshotChange}
-                  className="hidden"
-                />
-                {!screenshotDataUrl ? (
+                {configuredInstructions && (
+                  <div className="w-full p-3 rounded-xl bg-[#141414] border border-[#454545] text-left text-[11px] text-[#C5C5C5] whitespace-pre-line">
+                    {configuredInstructions}
+                  </div>
+                )}
+
+                {!showVerificationForm && (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-3.5 px-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-950/60 flex flex-col items-center justify-center gap-1 text-xs text-slate-300"
+                    onClick={() => setShowVerificationForm(true)}
+                    className="w-full min-h-[46px] py-2.5 px-4 rounded-xl ra-btn-primary text-xs flex items-center justify-center gap-2"
                   >
-                    <Upload className="w-4 h-4 text-amber-400" />
-                    <span className="font-bold">Select Payment Screenshot</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>I Have Paid — Submit Proof</span>
                   </button>
-                ) : (
-                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <ImageIcon className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="text-xs text-slate-200 truncate">{screenshotFileName}</span>
-                    </div>
+                )}
+              </div>
+            )}
+
+            {configuredQrUrl && showVerificationForm && (
+              <form onSubmit={handleSubmitClaim} className="space-y-3 pt-2 border-t border-[#454545]/70">
+                {priceUpdateNotice && (
+                  <div className="p-2.5 rounded-xl bg-[#FF762E]/15 border border-[#FF762E]/50 text-[#F5F5F5] text-xs">
+                    {priceUpdateNotice}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-mono-tech uppercase tracking-wider text-[#C5C5C5] mb-1">
+                    1. Login Email Address <span className="text-[#FF2525]">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={submittedEmail}
+                    onChange={(e) => setSubmittedEmail(e.target.value)}
+                    className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-[#141414] border border-[#454545] text-xs text-[#F5F5F5] focus:outline-none focus:border-[#FF2525]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono-tech uppercase tracking-wider text-[#C5C5C5] mb-1">
+                    2. Paid Amount (₹) <span className="text-[#FF2525]">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    step="any"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-[#141414] border border-[#454545] text-xs font-mono-tech text-[#F5F5F5] focus:outline-none focus:border-[#FF2525]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono-tech uppercase tracking-wider text-[#C5C5C5] mb-1">
+                    3. Payment Screenshot (JPG/PNG/WEBP) <span className="text-[#FF2525]">*</span>
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleScreenshotChange}
+                    className="hidden"
+                  />
+                  {!screenshotDataUrl ? (
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-[10px] font-bold text-amber-300 px-2 py-1 rounded bg-slate-800"
+                      className="w-full py-3.5 px-3 rounded-xl border-2 border-dashed border-[#454545] hover:border-[#FF2525]/70 bg-[#141414] flex flex-col items-center justify-center gap-1 text-xs text-[#F5F5F5] transition-colors"
                     >
-                      Change
+                      <Upload className="w-4 h-4 text-[#FF2525]" />
+                      <span className="font-semibold">Select Payment Screenshot</span>
                     </button>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-[#141414] border border-[#FF2525]/55 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ImageIcon className="w-4 h-4 text-[#FF2525] shrink-0" />
+                        <span className="text-xs text-[#F5F5F5] truncate">{screenshotFileName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-[10px] font-mono-tech uppercase font-bold text-[#FF762E] px-2.5 py-1 rounded bg-[#090909] border border-[#454545]"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono-tech uppercase tracking-wider text-[#C5C5C5] mb-1">
+                    4. Transaction ID / UTR {isUtrRequired ? <span className="text-[#FF2525]">*</span> : '(Optional)'}
+                  </label>
+                  <input
+                    type="text"
+                    required={isUtrRequired}
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                    placeholder="12-digit UTR / UPI Reference"
+                    className="w-full min-h-[42px] px-3 py-2 rounded-xl bg-[#141414] border border-[#454545] text-xs font-mono-tech text-[#F5F5F5] placeholder-[#929292]/55 focus:outline-none focus:border-[#FF2525]"
+                  />
+                </div>
+
+                {formError && (
+                  <div className="p-2.5 rounded-xl bg-[#FF2525]/12 border border-[#FF2525]/55 text-[#F5F5F5] text-xs flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-[#FF2525] shrink-0 mt-0.5" />
+                    <span>{formError}</span>
                   </div>
                 )}
-              </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  4. Transaction ID / UTR {isUtrRequired ? <span className="text-rose-400">*</span> : '(Optional)'}
-                </label>
-                <input
-                  type="text"
-                  required={isUtrRequired}
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="12-digit UTR / UPI Reference"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full min-h-[46px] py-2.5 px-4 rounded-xl ra-btn-primary text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Submitting Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Submit Pre-Key VIP Request</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
-              {formError && (
-                <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Submitting Request...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Submit Pre-Key VIP Request</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+        {/* Footer Support */}
+        <div className="mt-4 pt-3 border-t border-[#454545]/70 flex items-center justify-between gap-2 text-xs">
+          <span className="text-[#929292] flex items-center gap-1.5">
+            <LifeBuoy className="w-3.5 h-3.5 text-[#FF762E]" />
+            <span>Need help with VIP purchase?</span>
+          </span>
+          <button
+            type="button"
+            onClick={handleOpenSupport}
+            className="min-h-[38px] px-3 py-1.5 rounded-xl ra-btn-secondary text-[11px]"
+          >
+            Contact Support
+          </button>
         </div>
-      )}
 
-      {/* Footer Support */}
-      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
-        <span className="text-slate-400 flex items-center gap-1.5">
-          <LifeBuoy className="w-3.5 h-3.5 text-amber-400" />
-          <span>Need help with VIP purchase?</span>
-        </span>
-        <button
-          type="button"
-          onClick={handleOpenSupport}
-          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-[11px]"
-        >
-          Contact Support
-        </button>
+        {supportNotice && (
+          <p className="mt-2 text-[11px] text-[#FF762E] text-center">{supportNotice}</p>
+        )}
       </div>
-
-      {supportNotice && (
-        <p className="mt-2 text-[11px] text-amber-300 text-center">{supportNotice}</p>
-      )}
     </div>
   );
 };

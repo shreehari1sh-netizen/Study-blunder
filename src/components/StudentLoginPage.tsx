@@ -48,9 +48,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
-  const appName = settings?.app_name || 'STUDY FOX';
-  const logoUrl = settings?.app_logo_url || '/logo.png';
+  const appName = settings?.app_name || 'STUDY BLUNDER';
+  const logoUrl = settings?.app_logo_url || '';
   const loginEnabled = settings?.login_enabled !== false;
   const referralProgramEnabled = settings?.referral_program_enabled !== false;
 
@@ -175,23 +176,37 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({
     }
   };
 
-  return (
-    <div className="min-h-screen w-full bg-[#070B14] flex flex-col justify-between items-center p-4 sm:p-6 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-purple-600 selection:text-white">
-      {/* Background ambient lighting */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-b from-purple-600/20 to-indigo-600/10 rounded-full blur-3xl opacity-60" />
-        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-t from-amber-500/15 to-transparent rounded-full blur-3xl opacity-40" />
-      </div>
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [logoUrl]);
 
-      {/* Top Brand Banner */}
-      <div className="w-full max-w-sm flex items-center justify-between pt-2 z-10">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-[#0C1222] border border-white/10 flex items-center justify-center p-0.5 shadow-lg overflow-hidden shrink-0">
-            <img src={logoUrl} alt={appName} className="w-full h-full object-contain" />
+  return (
+    <div className="min-h-screen w-full ra-grid-bg bg-[#090909] text-[#F5F5F5] flex flex-col justify-between items-center p-4 sm:p-6 font-body selection:bg-[#FF2525] selection:text-[#F5F5F5] relative overflow-x-hidden">
+      {/* Top Armored Brand Bar */}
+      <div className="w-full max-w-md flex items-center justify-between gap-2 pt-1 z-10">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-[#141414] border border-[#454545] ra-corners flex items-center justify-center p-1 overflow-hidden shrink-0">
+            {logoUrl && !logoFailed ? (
+              <img
+                src={logoUrl}
+                alt={appName}
+                referrerPolicy="no-referrer"
+                onError={() => setLogoFailed(true)}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <span className="font-display text-xs font-black text-[#FF2525]">
+                {appName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
-          <div>
-            <span className="text-sm font-black text-white tracking-tight">{appName}</span>
-            <p className="text-[10px] text-slate-400 font-medium">Education Platform</p>
+          <div className="min-w-0">
+            <span className="font-display text-sm font-black uppercase tracking-wider text-[#F5F5F5] block truncate">
+              {appName}
+            </span>
+            <p className="text-[10px] font-mono-tech uppercase tracking-[0.18em] text-[#929292]">
+              RED ALERT · STUDENT PORTAL
+            </p>
           </div>
         </div>
 
@@ -200,369 +215,421 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({
             href={settings.telegram_channel_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-sky-400 hover:text-sky-300 font-semibold shadow-sm transition"
+            className="min-h-[40px] flex items-center gap-1.5 px-3 rounded-lg bg-[#141414] border border-[#454545] hover:border-[#FF2525]/70 text-xs text-[#C5C5C5] hover:text-[#F5F5F5] font-display font-bold uppercase tracking-wider transition-colors shrink-0"
           >
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-3.5 h-3.5 text-[#FF2525]" />
             <span>Updates</span>
           </a>
         )}
       </div>
 
-      {/* Center Auth Card */}
-      <div className="w-full max-w-sm my-auto z-10">
-        <div className="bg-[#0C1222]/90 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-2xl shadow-black/60 relative">
-          {/* Logo Crest */}
-          <div className="text-center mb-5">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-amber-500 p-0.5 mx-auto shadow-xl shadow-purple-950/50 mb-3 overflow-hidden">
-              <div className="w-full h-full bg-[#080D1A] rounded-2xl flex items-center justify-center p-1 overflow-hidden">
-                <img src={logoUrl} alt={appName} className="w-full h-full object-contain" />
-              </div>
-            </div>
-            <h1 className="text-xl font-black text-white tracking-tight">
+      {/* Center Command Auth Terminal */}
+      <div className="w-full max-w-md my-auto py-4 z-10">
+        <div className="ra-panel-red ra-corners ra-scanlines rounded-2xl overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.85)] relative">
+          {/* Top Hazard Accent Rail */}
+          <div className="ra-hazard-bar h-1.5 w-full" />
+
+          {/* Status Telemetry Strip */}
+          <div className="px-5 py-2 bg-[#090909]/90 border-b border-[#454545]/70 flex items-center justify-between text-[10px] font-mono-tech uppercase tracking-[0.16em]">
+            <span className="text-[#FF2525] font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF2525]" />
+              AUTH TERMINAL
+            </span>
+            <span className="text-[#929292]">
               {tab === 'login'
-                ? 'Student Sign In'
+                ? 'SIGN-IN GATE'
                 : tab === 'register'
-                ? 'Create Student Account'
+                ? 'NEW ENROLLMENT'
                 : tab === 'forgot'
-                ? 'Forgot Password'
-                : 'Set New Password'}
-            </h1>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              {tab === 'login'
-                ? 'Sign in to access your educational portals & VIP batches'
-                : tab === 'register'
-                ? 'Sign up for free to access live lecture batches & portals'
-                : tab === 'forgot'
-                ? 'Enter your registered email address to receive a password reset link'
-                : 'Enter and confirm your new password below'}
-            </p>
+                ? 'KEY RECOVERY'
+                : 'CREDENTIAL RESET'}
+            </span>
           </div>
 
-          {/* Shortener Callback Key Verification Banner */}
-          {isKeyVerify && (
-            <div className="mb-4 p-3 rounded-2xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-200 text-xs text-center animate-in fade-in">
-              <p className="font-extrabold flex items-center justify-center gap-1.5 text-emerald-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Shortener Verification Completed!</span>
-              </p>
-              <p className="text-[11px] text-emerald-300/90 mt-1">
-                Sign in or register to claim your 24-Hour Access Pass instantly!
-              </p>
-            </div>
-          )}
-
-          {/* Maintenance / Disabled Notice */}
-          {!loginEnabled && (
-            <div className="mb-4 p-3 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs">
-              <p className="font-bold flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Public login temporarily restricted</span>
-              </p>
-              <p className="text-[11px] text-amber-300/80 mt-1">
-                Administrator mode is currently active.
-              </p>
-            </div>
-          )}
-
-          {/* Tab Switcher (Sign In / New Account) */}
-          {(tab === 'login' || tab === 'register') && (
-            <div className="grid grid-cols-2 p-1 bg-[#070B14] rounded-2xl border border-slate-800/80 mb-5">
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('login');
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                className={`py-2 text-xs font-bold rounded-xl transition-all ${
-                  tab === 'login'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('register');
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                className={`py-2 text-xs font-bold rounded-xl transition-all ${
-                  tab === 'register'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-indigo-950/50'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                New Account
-              </button>
-            </div>
-          )}
-
-          {/* Success Banner */}
-          {successMessage && (
-            <div className="mb-4 p-3 rounded-2xl bg-emerald-950/60 border border-emerald-700/70 text-emerald-200 text-xs space-y-2">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
-                <span className="leading-relaxed">{successMessage}</span>
-              </div>
-              {generatedResetLink && tab === 'forgot' && (
-                <button
-                  type="button"
-                  onClick={handleOpenGeneratedResetLink}
-                  className="w-full py-2 px-3 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-500/50 text-emerald-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Proceed to Reset Password Page</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Error Banner */}
-          {error && (
-            <div className="mb-4 p-3 rounded-2xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-              <span className="leading-tight">{error}</span>
-            </div>
-          )}
-
-          {/* Auth Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            {(tab === 'login' || tab === 'register' || tab === 'forgot') && (
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1.5">Student Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@example.com"
-                    className="w-full bg-[#070B14] border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+          <div className="p-5 sm:p-6">
+            {/* Crest & Title */}
+            <div className="text-center mb-5">
+              <div className="w-16 h-16 rounded-xl bg-[#090909] border border-[#FF2525]/55 mx-auto mb-3 flex items-center justify-center p-2 overflow-hidden shadow-[0_0_24px_rgba(255,37,37,0.18)]">
+                {logoUrl && !logoFailed ? (
+                  <img
+                    src={logoUrl}
+                    alt={appName}
+                    referrerPolicy="no-referrer"
+                    onError={() => setLogoFailed(true)}
+                    className="w-full h-full object-contain"
                   />
-                </div>
+                ) : (
+                  <span className="font-display text-xl font-black text-[#FF2525] tracking-tight">
+                    {appName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <h1 className="font-display text-xl font-black uppercase tracking-wide text-[#F5F5F5]">
+                {tab === 'login'
+                  ? 'Student Sign In'
+                  : tab === 'register'
+                  ? 'Create Account'
+                  : tab === 'forgot'
+                  ? 'Reset Password'
+                  : 'Set New Password'}
+              </h1>
+              <p className="text-xs text-[#929292] mt-1 leading-relaxed">
+                {tab === 'login'
+                  ? 'Authenticate to launch study platforms & VIP command decks'
+                  : tab === 'register'
+                  ? 'Initialize a student account for instant platform access'
+                  : tab === 'forgot'
+                  ? 'Enter your registered email address to receive a reset link'
+                  : 'Enter and confirm your new password below'}
+              </p>
+            </div>
+
+            {/* Shortener Callback Key Verification Banner */}
+            {isKeyVerify && (
+              <div className="mb-4 p-3 rounded-xl bg-[#FF762E]/12 border border-[#FF762E]/50 text-[#F5F5F5] text-xs text-center">
+                <p className="font-display font-extrabold uppercase flex items-center justify-center gap-1.5 text-[#FF762E]">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>Verification Completed</span>
+                </p>
+                <p className="text-[11px] text-[#C5C5C5] mt-1">
+                  Sign in or register to claim your 24-Hour Access Pass instantly.
+                </p>
               </div>
             )}
 
+            {/* Maintenance / Disabled Notice */}
+            {!loginEnabled && (
+              <div className="mb-4 p-3 rounded-xl bg-[#FF762E]/12 border border-[#FF762E]/55 text-[#FF762E] text-xs">
+                <p className="font-display font-bold uppercase flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>Public login temporarily restricted</span>
+                </p>
+                <p className="text-[11px] text-[#C5C5C5] mt-1">
+                  Administrator mode is currently active.
+                </p>
+              </div>
+            )}
+
+            {/* Tab Switcher (Sign In / New Account) */}
             {(tab === 'login' || tab === 'register') && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-bold text-slate-300">Password</label>
-                  {tab === 'login' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTab('forgot');
-                        setError(null);
-                        setSuccessMessage(null);
-                        setGeneratedResetLink(null);
-                      }}
-                      className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                  )}
+              <div className="grid grid-cols-2 p-1 bg-[#090909] rounded-xl border border-[#454545] mb-5 gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('login');
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`min-h-[42px] font-display text-xs font-extrabold uppercase tracking-wider rounded-lg transition-all ${
+                    tab === 'login'
+                      ? 'bg-[#FF2525] text-[#F5F5F5] shadow-[0_0_16px_rgba(255,37,37,0.35)]'
+                      : 'text-[#929292] hover:text-[#F5F5F5]'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('register');
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`min-h-[42px] font-display text-xs font-extrabold uppercase tracking-wider rounded-lg transition-all ${
+                    tab === 'register'
+                      ? 'bg-[#FF2525] text-[#F5F5F5] shadow-[0_0_16px_rgba(255,37,37,0.35)]'
+                      : 'text-[#929292] hover:text-[#F5F5F5]'
+                  }`}
+                >
+                  New Account
+                </button>
+              </div>
+            )}
+
+            {/* Success Banner */}
+            {successMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-[#1D1D1D] border border-[#FF762E]/55 text-[#F5F5F5] text-xs space-y-2">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-[#FF762E] mt-0.5" />
+                  <span className="leading-relaxed">{successMessage}</span>
                 </div>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-[#070B14] border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
-                  />
+                {generatedResetLink && tab === 'forgot' && (
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
+                    onClick={handleOpenGeneratedResetLink}
+                    className="w-full min-h-[42px] px-3 rounded-lg ra-btn-primary text-xs flex items-center justify-center gap-1.5"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Proceed to Reset Password</span>
                   </button>
-                </div>
+                )}
+              </div>
+            )}
 
-                {/* Part E: Enter Referral Code (Optional) directly below Password */}
-                <div className="mt-3.5">
+            {/* Error Banner */}
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-[#FF2525]/12 border border-[#FF2525]/60 text-[#F5F5F5] text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-[#FF2525]" />
+                <span className="leading-tight">{error}</span>
+              </div>
+            )}
+
+            {/* Auth Form */}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {(tab === 'login' || tab === 'register' || tab === 'forgot') && (
+                <div>
+                  <label className="block text-[11px] font-mono-tech uppercase tracking-wider font-bold text-[#C5C5C5] mb-1.5">
+                    Student Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="student@example.com"
+                      className="w-full h-11 bg-[#090909] border border-[#454545] rounded-xl pl-10 pr-3.5 text-xs text-[#F5F5F5] placeholder-[#929292]/60 focus:outline-none focus:border-[#FF2525] transition-colors"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {(tab === 'login' || tab === 'register') && (
+                <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[11px] font-bold text-slate-300">
-                      Enter Referral Code (Optional)
+                    <label className="block text-[11px] font-mono-tech uppercase tracking-wider font-bold text-[#C5C5C5]">
+                      Password
                     </label>
-                    {referralProgramEnabled && settings?.referral_discount_config?.discount_enabled && settings.referral_discount_config.discount_value > 0 && (
-                      <span className="text-[10px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                        {settings.referral_discount_config.discount_type === 'percentage'
-                          ? `${settings.referral_discount_config.discount_value}% VIP Discount`
-                          : `₹${settings.referral_discount_config.discount_value} VIP Discount`}
-                      </span>
+                    {tab === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTab('forgot');
+                          setError(null);
+                          setSuccessMessage(null);
+                          setGeneratedResetLink(null);
+                        }}
+                        className="text-[11px] font-bold text-[#FF762E] hover:text-[#FF2525] transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
                     )}
                   </div>
                   <div className="relative">
-                    <Gift className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      disabled={!referralProgramEnabled}
-                      value={referralProgramEnabled ? referralCode : ''}
-                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                      placeholder={
-                        referralProgramEnabled
-                          ? 'Enter Referral Code (Optional) e.g. SF-XXXX'
-                          : 'Referral Program is currently OFF.'
-                      }
-                      maxLength={32}
-                      className={`w-full bg-[#070B14] border rounded-xl pl-10 pr-3.5 py-2.5 text-xs uppercase tracking-wider font-mono transition-colors ${
-                        referralProgramEnabled
-                          ? 'border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/70'
-                          : 'border-slate-800/60 text-slate-500 placeholder-slate-500 cursor-not-allowed opacity-75'
-                      }`}
-                    />
-                  </div>
-                  {!referralProgramEnabled && (
-                    <p className="text-[11px] font-semibold text-amber-400/90 mt-1.5 flex items-center gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Referral Program is currently OFF.</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {tab === 'reset' && (
-              <>
-                {email && (
-                  <div className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                    <span className="truncate">Account: <strong className="text-white">{email}</strong></span>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">New Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Lock className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
-                      minLength={6}
-                      maxLength={128}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password (min 6 characters)"
-                      className="w-full bg-[#070B14] border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full h-11 bg-[#090909] border border-[#454545] rounded-xl pl-10 pr-10 text-xs text-[#F5F5F5] placeholder-[#929292]/60 focus:outline-none focus:border-[#FF2525] transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#929292] hover:text-[#F5F5F5] p-1.5"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">Confirm New Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      minLength={6}
-                      maxLength={128}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
-                      className="w-full bg-[#070B14] border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                  {/* Optional Referral Code */}
+                  <div className="mt-3.5">
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <label className="block text-[11px] font-mono-tech uppercase tracking-wider font-bold text-[#C5C5C5]">
+                        Referral Code (Optional)
+                      </label>
+                      {referralProgramEnabled &&
+                        settings?.referral_discount_config?.discount_enabled &&
+                        settings.referral_discount_config.discount_value > 0 && (
+                          <span className="font-mono-tech text-[10px] font-bold text-[#FF762E]">
+                            {settings.referral_discount_config.discount_type === 'percentage'
+                              ? `${settings.referral_discount_config.discount_value}% VIP OFF`
+                              : `₹${settings.referral_discount_config.discount_value} VIP OFF`}
+                          </span>
+                        )}
+                    </div>
+                    <div className="relative">
+                      <Gift className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        disabled={!referralProgramEnabled}
+                        value={referralProgramEnabled ? referralCode : ''}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        placeholder={
+                          referralProgramEnabled
+                            ? 'Optional code e.g. SF-XXXX'
+                            : 'Referral Program is currently OFF.'
+                        }
+                        maxLength={32}
+                        className={`w-full h-11 bg-[#090909] border rounded-xl pl-10 pr-3.5 text-xs uppercase tracking-wider font-mono-tech transition-colors ${
+                          referralProgramEnabled
+                            ? 'border-[#454545] text-[#F5F5F5] placeholder-[#929292]/60 focus:outline-none focus:border-[#FF762E]'
+                            : 'border-[#454545]/50 text-[#929292]/50 placeholder-[#929292]/45 cursor-not-allowed'
+                        }`}
+                      />
+                    </div>
+                    {!referralProgramEnabled && (
+                      <p className="text-[11px] font-semibold text-[#FF762E] mt-1.5 flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Referral Program is currently OFF.</span>
+                      </p>
+                    )}
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            <button
-              type="submit"
-              disabled={submitting || (!loginEnabled && (tab === 'login' || tab === 'register'))}
-              className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:opacity-95 text-white font-extrabold text-xs uppercase tracking-wider shadow-xl shadow-purple-950/60 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>
-                {submitting
-                  ? 'Please wait...'
-                  : tab === 'login'
-                  ? 'Sign In & Access'
-                  : tab === 'register'
-                  ? 'Create Free Account'
-                  : tab === 'forgot'
-                  ? 'Send Reset Link'
-                  : 'Update Password'}
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              {tab === 'reset' && (
+                <>
+                  {email && (
+                    <div className="p-2.5 rounded-xl bg-[#090909] border border-[#454545] text-[11px] text-[#929292] flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-[#FF2525] shrink-0" />
+                      <span className="truncate">
+                        Account: <strong className="text-[#F5F5F5]">{email}</strong>
+                      </span>
+                    </div>
+                  )}
 
-            {(tab === 'forgot' || tab === 'reset') && (
+                  <div>
+                    <label className="block text-[11px] font-mono-tech uppercase tracking-wider font-bold text-[#C5C5C5] mb-1.5">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        maxLength={128}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password (min 6 characters)"
+                        className="w-full h-11 bg-[#090909] border border-[#454545] rounded-xl pl-10 pr-10 text-xs text-[#F5F5F5] placeholder-[#929292]/60 focus:outline-none focus:border-[#FF2525] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#929292] hover:text-[#F5F5F5] p-1.5"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono-tech uppercase tracking-wider font-bold text-[#C5C5C5] mb-1.5">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        maxLength={128}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Re-enter new password"
+                        className="w-full h-11 bg-[#090909] border border-[#454545] rounded-xl pl-10 pr-10 text-xs text-[#F5F5F5] placeholder-[#929292]/60 focus:outline-none focus:border-[#FF2525] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#929292] hover:text-[#F5F5F5] p-1.5"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined' && (window.location.search.includes('reset_token') || window.location.hash.includes('type=recovery'))) {
-                    window.history.replaceState({}, '', '/');
-                  }
-                  setTab('login');
-                  setError(null);
-                  setSuccessMessage(null);
-                  setGeneratedResetLink(null);
-                  if (onPasswordResetComplete) {
-                    onPasswordResetComplete();
-                  }
-                }}
-                className="w-full py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                type="submit"
+                disabled={submitting || (!loginEnabled && (tab === 'login' || tab === 'register'))}
+                className="w-full min-h-[48px] mt-2 px-4 rounded-xl ra-btn-primary text-xs flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Sign In</span>
+                <span>
+                  {submitting
+                    ? 'Authenticating...'
+                    : tab === 'login'
+                    ? 'Sign In & Launch'
+                    : tab === 'register'
+                    ? 'Create Free Account'
+                    : tab === 'forgot'
+                    ? 'Send Reset Link'
+                    : 'Update Password'}
+                </span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </button>
-            )}
-          </form>
 
-          {/* Value Props */}
-          <div className="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center">
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/50">
-              <BookOpen className="w-3.5 h-3.5 text-indigo-400 mx-auto mb-1" />
-              <p className="text-[10px] text-slate-300 font-bold">Live Portals</p>
-            </div>
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/50">
-              <GraduationCap className="w-3.5 h-3.5 text-purple-400 mx-auto mb-1" />
-              <p className="text-[10px] text-slate-300 font-bold">VIP Batches</p>
-            </div>
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/50">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1" />
-              <p className="text-[10px] text-slate-300 font-bold">Fast Access</p>
+              {(tab === 'forgot' || tab === 'reset') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      typeof window !== 'undefined' &&
+                      (window.location.search.includes('reset_token') ||
+                        window.location.hash.includes('type=recovery'))
+                    ) {
+                      window.history.replaceState({}, '', '/');
+                    }
+                    setTab('login');
+                    setError(null);
+                    setSuccessMessage(null);
+                    setGeneratedResetLink(null);
+                    if (onPasswordResetComplete) {
+                      onPasswordResetComplete();
+                    }
+                  }}
+                  className="w-full min-h-[44px] rounded-xl ra-btn-secondary text-xs flex items-center justify-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Sign In</span>
+                </button>
+              )}
+            </form>
+
+            {/* Tactical Capabilities Strip */}
+            <div className="mt-5 pt-4 border-t border-[#454545]/70 grid grid-cols-3 gap-2 text-center">
+              <div className="p-2.5 rounded-lg bg-[#090909] border border-[#454545]">
+                <BookOpen className="w-3.5 h-3.5 text-[#FF2525] mx-auto mb-1" />
+                <p className="font-display text-[10px] text-[#F5F5F5] font-bold uppercase tracking-wider">Portals</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#090909] border border-[#454545]">
+                <GraduationCap className="w-3.5 h-3.5 text-[#FF762E] mx-auto mb-1" />
+                <p className="font-display text-[10px] text-[#F5F5F5] font-bold uppercase tracking-wider">VIP Deck</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#090909] border border-[#454545]">
+                <Sparkles className="w-3.5 h-3.5 text-[#C5C5C5] mx-auto mb-1" />
+                <p className="font-display text-[10px] text-[#F5F5F5] font-bold uppercase tracking-wider">Fast Pass</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Admin Link at Bottom */}
+        {/* Admin Portal Switch */}
         <div className="mt-4 text-center">
           <button
+            type="button"
             onClick={onNavigateAdmin}
-            className="text-xs text-slate-500 hover:text-slate-300 font-medium inline-flex items-center gap-1.5 transition-colors"
+            className="min-h-[42px] px-4 rounded-xl bg-[#141414]/80 border border-[#454545]/60 hover:border-[#FF2525]/60 text-xs text-[#C5C5C5] hover:text-[#F5F5F5] font-medium inline-flex items-center gap-2 transition-colors"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-            <span>Are you a Staff Administrator? Admin Login</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#FF2525]" />
+            <span>Staff Administrator? Command Login</span>
           </button>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="w-full max-w-sm text-center py-3 text-[11px] text-slate-500 z-10">
-        <p>© {new Date().getFullYear()} {appName}. All rights reserved.</p>
+      <footer className="w-full max-w-md text-center py-2 text-[11px] text-[#929292] font-mono-tech z-10">
+        <p>© {new Date().getFullYear()} {appName}</p>
       </footer>
     </div>
   );
 };
+
+

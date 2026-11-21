@@ -633,8 +633,10 @@ export const KeyGenerationModal: React.FC<KeyGenerationModalProps> = ({
     }
   };
 
+  const activeStep = generatedKey ? 3 : hasReturnedFromVplink || waitingForVplinkReturn ? 2 : 1;
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#070B14]/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-[#090909]/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto ra-grid-bg">
       {showPreKeyVip ? (
         <PreKeyVipPurchasePage
           user={user}
@@ -650,256 +652,305 @@ export const KeyGenerationModal: React.FC<KeyGenerationModalProps> = ({
           }}
         />
       ) : (
-      <div className="bg-[#0C1222] border border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200 my-auto">
-        {/* Glow Crest */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-500 p-0.5 mx-auto shadow-xl shadow-purple-900/50 mb-3.5">
-          <div className="w-full h-full bg-[#090D16] rounded-2xl flex items-center justify-center text-indigo-400">
-            <Key className="w-7 h-7" />
+        <div className="ra-panel-red ra-corners ra-scanlines rounded-2xl max-w-md w-full overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.9)] relative text-center my-auto">
+          {/* Top Hazard Rail */}
+          <div className="ra-hazard-bar h-1.5 w-full" />
+
+          {/* Telemetry Top Bar */}
+          <div className="px-4 py-2 bg-[#090909]/90 border-b border-[#454545]/70 flex items-center justify-between text-[10px] font-mono-tech uppercase tracking-[0.16em]">
+            <span className="text-[#FF2525] font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF2525]" />
+              ACCESS KEY GATE
+            </span>
+            <span className="text-[#C5C5C5]">STEP 0{activeStep} / 03</span>
           </div>
-        </div>
 
-        <h2 className="text-lg font-extrabold text-white">Unlock Free Platform Access</h2>
-        <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-          Generate a key via VPLINK, copy your unique key, and verify it below to unlock 24 hours of free access.
-        </p>
-
-        <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
-          <Clock className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Access Validity: 24 Hours after Verification</span>
-        </div>
-
-        {/* Pending VIP Payment Verification Status Banner on Key Page */}
-        {pendingPayment && (
-          <div className="mt-3.5 p-3 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-left space-y-1.5 animate-in fade-in">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Payment Pending Verification</span>
-              </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
-                {pendingPayment.request_id || pendingPayment.id}
-              </span>
+          <div className="p-5 sm:p-6">
+            {/* Crest */}
+            <div className="w-14 h-14 rounded-2xl bg-[#090909] border border-[#FF2525]/55 flex items-center justify-center text-[#FF2525] mx-auto mb-3.5 shadow-[0_0_24px_rgba(255,37,37,0.2)]">
+              <Key className="w-7 h-7" />
             </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Your VIP request for <strong>{pendingPayment.plan_title}</strong> (₹{pendingPayment.amount}) is awaiting Admin verification. Home unlocks automatically once approved.
+
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.2em] text-[#FF2525] font-bold mb-1">
+              SECURITY CLEARANCE TERMINAL
             </p>
-            <button
-              type="button"
-              onClick={() => setShowPreKeyVip(true)}
-              className="text-[11px] font-bold text-amber-300 hover:text-amber-200 underline"
-            >
-              View Payment Request Status →
-            </button>
-          </div>
-        )}
+            <h2 className="font-display text-lg font-black text-[#F5F5F5] uppercase tracking-wide">
+              Unlock Free Platform Access
+            </h2>
+            <p className="text-xs text-[#929292] mt-1.5 leading-relaxed">
+              Generate a key via VPLINK, copy your unique key, and verify it below to unlock free platform access.
+            </p>
 
-        {/* Error Banner */}
-        {error && (
-          <div className="mt-3.5 p-2.5 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2 text-left">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Generated Key Display + Copy Key Button (Shown ONLY after returning from VPLINK and clicking Get Key) */}
-        {generatedKey && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-left space-y-2.5 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Your Generated Key</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold">Single-Use</span>
+            {/* 3-Step Tactical Progress Strip */}
+            <div className="mt-3.5 grid grid-cols-3 gap-1.5 text-[10px] font-mono-tech uppercase">
+              <div
+                className={`px-2 py-1.5 rounded-lg border ${
+                  activeStep >= 1
+                    ? 'bg-[#FF2525]/15 border-[#FF2525]/60 text-[#F5F5F5]'
+                    : 'bg-[#090909] border-[#454545] text-[#929292]'
+                }`}
+              >
+                01. VPLINK
+              </div>
+              <div
+                className={`px-2 py-1.5 rounded-lg border ${
+                  activeStep >= 2
+                    ? 'bg-[#FF762E]/15 border-[#FF762E]/60 text-[#FF762E]'
+                    : 'bg-[#090909] border-[#454545] text-[#929292]'
+                }`}
+              >
+                02. 200S CHECK
+              </div>
+              <div
+                className={`px-2 py-1.5 rounded-lg border ${
+                  activeStep >= 3
+                    ? 'bg-[#FF2525]/20 border-[#FF2525] text-[#F5F5F5]'
+                    : 'bg-[#090909] border-[#454545] text-[#929292]'
+                }`}
+              >
+                03. VERIFY
+              </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 bg-[#070B14] border border-slate-800 rounded-xl px-3 py-2.5">
-              <code className="text-xs font-extrabold tracking-wider text-amber-300 select-all break-all">
-                {generatedKey}
-              </code>
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#090909] border border-[#454545] text-[#C5C5C5] text-[11px] font-mono-tech">
+              <Clock className="w-3.5 h-3.5 text-[#FF762E]" />
+              <span>VALIDITY: {settings?.key_expiry_hours || 24}H AFTER VERIFICATION</span>
+            </div>
+
+            {/* Pending VIP Payment Verification Status Banner on Key Page */}
+            {pendingPayment && (
+              <div className="mt-3.5 p-3 rounded-xl bg-[#FF762E]/12 border border-[#FF762E]/50 text-left space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-display font-extrabold uppercase tracking-wider text-[#FF762E] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#FF762E]" />
+                    <span>Payment Pending</span>
+                  </span>
+                  <span className="text-[10px] font-mono-tech font-bold px-2 py-0.5 rounded bg-[#090909] text-[#FF762E] border border-[#FF762E]/40">
+                    {pendingPayment.request_id || pendingPayment.id}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#F5F5F5] leading-relaxed">
+                  Your VIP request for <strong>{pendingPayment.plan_title}</strong> (₹{pendingPayment.amount}) is awaiting Admin verification. Home unlocks automatically once approved.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPreKeyVip(true)}
+                  className="text-[11px] font-bold text-[#FF762E] hover:text-[#F5F5F5] underline"
+                >
+                  View Payment Request Status →
+                </button>
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {error && (
+              <div className="mt-3.5 p-3 rounded-xl bg-[#FF2525]/12 border border-[#FF2525]/55 text-[#F5F5F5] text-xs flex items-center gap-2 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-[#FF2525]" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Generated Key Display + Copy Key Button */}
+            {generatedKey && (
+              <div className="mt-4 p-3.5 rounded-xl bg-[#1D1D1D] border border-[#FF2525]/65 text-left space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-display font-extrabold uppercase tracking-wider text-[#FF2525] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#FF2525]" />
+                    <span>Your Generated Key</span>
+                  </span>
+                  <span className="text-[10px] font-mono-tech uppercase text-[#C5C5C5]">Single-Use</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 bg-[#090909] border border-[#454545] rounded-xl px-3 py-2.5">
+                  <code className="text-xs font-mono-tech font-bold tracking-wider text-[#F5F5F5] select-all break-all">
+                    {generatedKey}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={handleCopyKey}
+                    className="min-h-[36px] px-3 py-1.5 rounded-lg ra-btn-primary text-[11px] flex items-center gap-1.5 shrink-0"
+                  >
+                    {copySuccess ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Key</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {copySuccess && (
+                  <p className="text-[11px] font-semibold text-[#FF762E] flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Key copied successfully! Paste it below and click Verify Key.</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Paste Key Input & Verify Key Form */}
+            <form onSubmit={handleVerifyKey} className="mt-4 space-y-2.5 text-left">
+              <div>
+                <label
+                  htmlFor="access-key-input"
+                  className="block text-[11px] font-mono-tech uppercase tracking-wider text-[#C5C5C5] mb-1.5"
+                >
+                  Enter or Paste Access Key
+                </label>
+                <input
+                  id="access-key-input"
+                  type="text"
+                  value={keyInput}
+                  onChange={(e) => {
+                    setKeyInput(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder="e.g. SFOX-XXXX-XXXX-XXXX"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full min-h-[44px] bg-[#090909] border border-[#454545] focus:border-[#FF2525] rounded-xl px-3.5 py-2.5 text-xs font-mono-tech font-bold tracking-wider text-[#F5F5F5] placeholder-[#929292]/55 focus:outline-none transition-colors uppercase"
+                />
+              </div>
+
               <button
-                type="button"
-                onClick={handleCopyKey}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1.5 shrink-0 transition-colors shadow-sm"
+                type="submit"
+                disabled={verifying}
+                className="w-full min-h-[46px] py-2.5 px-4 rounded-xl ra-btn-primary text-xs flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                {copySuccess ? (
+                {verifying ? (
                   <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Copied</span>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Verifying Key...</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Key</span>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify Key</span>
                   </>
                 )}
               </button>
-            </div>
+            </form>
 
-            {copySuccess && (
-              <p className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span>Key copied successfully! Paste it below and click Verify Key.</span>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Paste Key Input & Verify Key Form */}
-        <form onSubmit={handleVerifyKey} className="mt-4 space-y-2.5 text-left">
-          <div>
-            <label htmlFor="access-key-input" className="block text-[11px] font-bold text-slate-300 mb-1">
-              Enter or Paste Access Key
-            </label>
-            <input
-              id="access-key-input"
-              type="text"
-              value={keyInput}
-              onChange={(e) => {
-                setKeyInput(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="e.g. SFOX-XXXX-XXXX-XXXX"
-              autoComplete="off"
-              spellCheck={false}
-              className="w-full bg-[#080D19] border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold tracking-wider text-white placeholder-slate-500 focus:outline-none transition-colors uppercase"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={verifying}
-            className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-950/50 active:scale-[0.98] disabled:opacity-60"
-          >
-            {verifying ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Verifying Key...</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                <span>Verify Key</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* VPLINK Waiting Period Notice */}
-        {(waitingForVplinkReturn || (hasReturnedFromVplink && waitRemainingSeconds > 0)) && !generatedKey && (
-          <div className="mt-4 p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 text-left space-y-1.5 animate-in fade-in">
-            <div className="flex items-center justify-between gap-2 text-indigo-300 font-bold text-xs">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
-                </span>
-                <span>Shortener Flow in Progress</span>
+            {/* VPLINK Waiting Period Notice */}
+            {(waitingForVplinkReturn || (hasReturnedFromVplink && waitRemainingSeconds > 0)) && !generatedKey && (
+              <div className="mt-4 p-3 rounded-xl bg-[#090909] border border-[#FF762E]/55 text-left space-y-1.5">
+                <div className="flex items-center justify-between gap-2 text-[#FF762E] font-display font-bold text-xs uppercase tracking-wide">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex rounded-full h-2 w-2 bg-[#FF762E]" />
+                    <span>Shortener Flow Active</span>
+                  </div>
+                  {waitRemainingSeconds > 0 && (
+                    <span className="text-[11px] font-mono-tech text-[#F5F5F5]">
+                      {formatWaitTime(waitRemainingSeconds)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#929292] leading-relaxed">
+                  Please complete the shortener process and return after the required time. The <strong className="text-[#F5F5F5]">Get Key</strong> button unlocks after 200 seconds.
+                </p>
               </div>
-              {waitRemainingSeconds > 0 && (
-                <span className="text-[11px] font-mono text-amber-300">
-                  {formatWaitTime(waitRemainingSeconds)}
+            )}
+
+            {/* Key Generation & Get Key Action Buttons */}
+            <div className="mt-4 pt-3.5 border-t border-[#454545]/70 space-y-2.5">
+              {/* Get Key Button: Disabled until at least 200 seconds have elapsed */}
+              {(hasReturnedFromVplink || canGetKey) && !generatedKey && (
+                <button
+                  type="button"
+                  onClick={handleGetKey}
+                  disabled={claimingKey || !canGetKey || waitRemainingSeconds > 0}
+                  className="w-full min-h-[46px] py-2.5 px-4 rounded-xl ra-btn-primary text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {claimingKey ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Generating Unique Key...</span>
+                    </>
+                  ) : waitRemainingSeconds > 0 || !canGetKey ? (
+                    <>
+                      <Clock className="w-4 h-4" />
+                      <span className="font-mono-tech">Get Key ({formatWaitTime(waitRemainingSeconds)})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-4 h-4" />
+                      <span>Get Key</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Generate New Key Button */}
+              <button
+                type="button"
+                onClick={handleGenerateNewKey}
+                disabled={generating || (waitRemainingSeconds > 0 && Boolean(activeFlowId))}
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#090909] hover:bg-[#1D1D1D] border border-[#FF2525]/65 text-[#F5F5F5] font-display font-extrabold text-xs tracking-wider uppercase active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Key className="w-4 h-4 text-[#FF2525]" />
+                <span>
+                  {generating
+                    ? 'Opening VPLINK...'
+                    : waitRemainingSeconds > 0 && activeFlowId
+                    ? `Shortener Active (${formatWaitTime(waitRemainingSeconds)})`
+                    : 'Generate New Key'}
                 </span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#FF2525]" />
+              </button>
+
+              {/* GET VIP Button (Pre-Key VIP Purchase Page inside App) */}
+              <button
+                type="button"
+                onClick={() => setShowPreKeyVip(true)}
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#FF762E] hover:bg-[#ff8a4c] text-[#090909] font-display font-extrabold text-xs tracking-wider uppercase active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <Crown className="w-4 h-4 stroke-[2.4]" />
+                <span>GET VIP — SKIP KEY FOREVER</span>
+              </button>
+
+              {(waitingForVplinkReturn || (hasReturnedFromVplink && waitRemainingSeconds > 0)) && !generatedKey && (
+                <button
+                  type="button"
+                  onClick={handleReopenLink}
+                  className="w-full min-h-[42px] py-2 px-4 rounded-xl ra-btn-secondary text-xs flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-[#FF2525]" />
+                  <span>Re-open VPLINK Page</span>
+                </button>
               )}
+
+              {/* How to Generate Key Tutorial Button */}
+              <button
+                type="button"
+                onClick={handleHowToGenerateKey}
+                className="w-full min-h-[42px] py-2 px-4 rounded-xl bg-[#090909] hover:bg-[#1D1D1D] border border-[#454545] text-[#C5C5C5] hover:text-[#F5F5F5] font-semibold text-xs tracking-wide flex items-center justify-center gap-2 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4 text-[#FF762E]" />
+                <span>How to Generate Key?</span>
+              </button>
             </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Please complete the shortener process and return after the required time. The <strong>Get Key</strong> button unlocks after 200 seconds.
-            </p>
+
+            {/* VIP Shortcut */}
+            <div className="mt-4 pt-3.5 border-t border-[#454545]/70">
+              <button
+                type="button"
+                onClick={() => setShowPreKeyVip(true)}
+                className="text-[11px] text-[#FF762E] hover:text-[#F5F5F5] font-semibold flex items-center justify-center gap-1.5 mx-auto transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#FF762E]" />
+                <span>VIP Students skip key generation forever. Upgrade to VIP</span>
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Key Generation & Get Key Action Buttons */}
-        <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-2.5">
-          {/* Get Key Button: Disabled until at least 200 seconds have elapsed */}
-          {(hasReturnedFromVplink || canGetKey) && !generatedKey && (
-            <button
-              type="button"
-              onClick={handleGetKey}
-              disabled={claimingKey || !canGetKey || waitRemainingSeconds > 0}
-              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:opacity-95 text-slate-950 font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-amber-950/50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed animate-in fade-in"
-            >
-              {claimingKey ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Generating Unique Key...</span>
-                </>
-              ) : waitRemainingSeconds > 0 || !canGetKey ? (
-                <>
-                  <Clock className="w-4 h-4" />
-                  <span>Get Key ({formatWaitTime(waitRemainingSeconds)})</span>
-                </>
-              ) : (
-                <>
-                  <Key className="w-4 h-4" />
-                  <span>Get Key</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {/* Generate New Key Button */}
-          <button
-            type="button"
-            onClick={handleGenerateNewKey}
-            disabled={generating || (waitRemainingSeconds > 0 && Boolean(activeFlowId))}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-500 hover:opacity-95 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-purple-950/60 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Key className="w-4 h-4" />
-            <span>
-              {generating
-                ? 'Opening VPLINK...'
-                : waitRemainingSeconds > 0 && activeFlowId
-                ? `Shortener Active (${formatWaitTime(waitRemainingSeconds)})`
-                : 'Generate New Key'}
-            </span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-
-          {/* 👑 GET VIP Button (Pre-Key VIP Purchase Page inside App) */}
-          <button
-            type="button"
-            onClick={() => setShowPreKeyVip(true)}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 hover:opacity-95 text-slate-950 font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-amber-950/60 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-          >
-            <Crown className="w-4 h-4 stroke-[2.4]" />
-            <span>👑 GET VIP</span>
-          </button>
-
-          {(waitingForVplinkReturn || (hasReturnedFromVplink && waitRemainingSeconds > 0)) && !generatedKey && (
-            <button
-              type="button"
-              onClick={handleReopenLink}
-              className="w-full py-2 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Re-open VPLINK Page</span>
-            </button>
-          )}
-
-          {/* How to Generate Key Tutorial Button */}
-          <button
-            type="button"
-            onClick={handleHowToGenerateKey}
-            className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-colors"
-          >
-            <PlayCircle className="w-4 h-4 text-amber-400" />
-            <span>How to Generate Key?</span>
-          </button>
         </div>
-
-        {/* VIP Shortcut */}
-        <div className="mt-4 pt-3.5 border-t border-slate-800/80">
-          <button
-            type="button"
-            onClick={() => setShowPreKeyVip(true)}
-            className="text-[11px] text-amber-300 hover:text-amber-200 font-semibold flex items-center justify-center gap-1.5 mx-auto transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>VIP Students skip key generation forever. Upgrade to VIP</span>
-          </button>
-        </div>
-      </div>
       )}
     </div>
   );
 };
+
 

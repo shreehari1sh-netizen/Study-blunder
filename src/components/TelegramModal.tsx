@@ -47,31 +47,33 @@ export const TelegramModal: React.FC<TelegramModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0C1222] border border-sky-500/40 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="ra-panel ra-corners rounded-2xl max-w-sm w-full p-6 shadow-2xl relative text-center overflow-hidden">
+        <div className="h-1 w-full ra-hazard-bar absolute top-0 left-0 right-0" />
+
         <button
           onClick={onClose}
           aria-label="Close Telegram popup"
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-full bg-slate-900/60"
+          className="absolute top-3.5 right-3.5 w-9 h-9 flex items-center justify-center text-[#C5C5C5] hover:text-[#F5F5F5] rounded-lg bg-[#090909] border border-[#454545] hover:border-[#FF2525] transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center mx-auto text-white shadow-xl shadow-sky-900/40 mb-4">
-          <Send className="w-7 h-7 -translate-x-0.5" />
+        <div className="w-14 h-14 rounded-2xl bg-[#090909] border border-[#FF2525]/55 flex items-center justify-center mx-auto text-[#FF2525] mb-4 mt-1">
+          <Send className="w-6 h-6 -translate-x-0.5" />
         </div>
 
-        <h3 className="text-base font-extrabold text-white">
+        <h3 className="font-display text-base font-black text-[#F5F5F5] uppercase tracking-tight">
           {title || 'Join Our Telegram Community'}
         </h3>
-        <p className="text-xs text-slate-300 mt-1.5 leading-relaxed whitespace-pre-line">
+        <p className="text-xs text-[#C5C5C5] mt-2 leading-relaxed whitespace-pre-line">
           {message || 'Get real-time platform updates, backup mirror links, batch notifications, and direct priority support.'}
         </p>
 
         {reminderText && reminderText.trim().length > 0 && (
-          <div className="mt-4 p-3 rounded-2xl bg-sky-950/30 border border-sky-900/50 flex items-center gap-2 text-xs text-sky-200 text-left">
-            <ShieldCheck className="w-4 h-4 text-sky-400 shrink-0" />
-            <span>{reminderText}</span>
+          <div className="mt-4 p-3 rounded-xl bg-[#090909] border border-[#454545] flex items-center gap-2.5 text-xs text-left">
+            <ShieldCheck className="w-4 h-4 text-[#FF2525] shrink-0" />
+            <span className="text-[#C5C5C5]">{reminderText}</span>
           </div>
         )}
 
@@ -79,7 +81,7 @@ export const TelegramModal: React.FC<TelegramModalProps> = ({
           {validUrl && (
             <button
               onClick={handleJoin}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-sky-900/50 flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="w-full min-h-[46px] py-2.5 px-4 rounded-xl ra-btn-primary font-display font-extrabold text-xs tracking-wider uppercase flex items-center justify-center gap-2"
             >
               <span>{buttonText || 'JOIN TELEGRAM CHANNEL'}</span>
               <ExternalLink className="w-4 h-4" />
@@ -88,7 +90,7 @@ export const TelegramModal: React.FC<TelegramModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-full py-2.5 text-xs text-slate-400 hover:text-white transition-colors"
+            className="w-full min-h-[42px] py-2 rounded-xl ra-btn-secondary text-xs font-semibold text-[#C5C5C5]"
           >
             {closeText || 'Maybe Later'}
           </button>

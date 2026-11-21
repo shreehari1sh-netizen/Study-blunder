@@ -203,8 +203,23 @@ export function toPublicUser(user: User, currentDeviceId?: string): UserPublicPr
     }
   }
 
+  // Compute active per-platform VIP entitlements (strictly scoped to individual platform IDs)
+  const activePlatformExpiries: Record<string, string> = {};
+  const activeAllowedPlatformIds: string[] = [];
+  if (!isBlocked && user.vip_platform_expiries && typeof user.vip_platform_expiries === 'object') {
+    for (const [pid, expIso] of Object.entries(user.vip_platform_expiries)) {
+      if (!pid || !expIso) continue;
+      const expMs = new Date(expIso).getTime();
+      if (Number.isFinite(expMs) && expMs + graceMs > now) {
+        activePlatformExpiries[pid] = expIso;
+        activeAllowedPlatformIds.push(pid);
+      }
+    }
+  }
+
   let vipDeviceStatus: 'bound_current' | 'bound_other' | 'unbound' | 'not_vip' = 'not_vip';
-  if (isVipActive) {
+  const hasAnyVipPrivilege = isVipActive || activeAllowedPlatformIds.length > 0;
+  if (hasAnyVipPrivilege) {
     if (!user.vip_bound_device_id) {
       vipDeviceStatus = 'unbound';
     } else if (currentDeviceId) {
@@ -226,6 +241,8 @@ export function toPublicUser(user: User, currentDeviceId?: string): UserPublicPr
     role: user.role,
     vip_active: isVipActive,
     vip_expires_at: user.vip_expires_at,
+    vip_allowed_platform_ids: activeAllowedPlatformIds,
+    vip_platform_expiries: activePlatformExpiries,
     vip_grace_until: vipGraceUntil,
     vip_membership_state: vipMembershipState,
     free_access_expires_at: user.free_access_expires_at || null,

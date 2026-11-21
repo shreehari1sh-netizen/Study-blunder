@@ -1,5 +1,5 @@
-import React from 'react';
-import { ShieldCheck, Send, LogIn, Crown, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Send, LogIn, Crown, Cpu, Sun, Moon } from 'lucide-react';
 import type { UserProfile, PublicSettings } from '../types.ts';
 import { SmartNotificationCenter } from './SmartNotificationCenter.tsx';
 
@@ -11,6 +11,8 @@ interface TopHeaderProps {
   onOpenTelegram: () => void;
   isAdminView: boolean;
   onExitAdmin: () => void;
+  colorMode?: 'dark' | 'light';
+  onToggleColorMode?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -21,89 +23,121 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenTelegram,
   isAdminView,
   onExitAdmin,
+  colorMode = 'dark',
+  onToggleColorMode,
 }) => {
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  // Reset fallback if admin uploads a new logo URL
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [settings?.app_logo_url]);
+
   const isPrivileged = user && (user.role === 'admin' || user.role === 'super_admin');
+  const brandTitle = (settings?.app_name || 'STUDY BLUNDER').trim() || 'STUDY BLUNDER';
+  const isDark = colorMode === 'dark';
 
   return (
-    <header
-      style={{ backgroundColor: 'var(--theme-bg, #070B14)' }}
-      className="sticky top-0 z-30 w-full backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-4 py-2 sm:py-2.5 transition-colors"
-    >
-      <div className="w-full flex items-center justify-between gap-3">
-        {/* Brand - Positioned at extreme left side */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-14 h-14 sm:w-16 sm:h-16 md:w-[4.5rem] md:h-[4.5rem] rounded-2xl bg-[#080D1A]/80 border-[0.5px] border-white/10 flex items-center justify-center shadow-md shadow-black/30 overflow-hidden p-0.5 shrink-0"
-          >
-            {settings?.app_logo_url ? (
+    <header className="sticky top-0 z-30 w-full bg-[#090909]/95 backdrop-blur-md border-b border-[#454545] shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-colors duration-200">
+      {/* Theme Accent Top Rail */}
+      <div
+        className="h-[2.5px] w-full"
+        style={{
+          background: 'linear-gradient(90deg, var(--sb-accent) 0%, var(--sb-accent-2) 55%, var(--sb-border) 100%)',
+        }}
+      />
+
+      <div className="w-full max-w-xl lg:max-w-5xl mx-auto px-3.5 sm:px-5 h-15 sm:h-16 flex items-center justify-between gap-2">
+        {/* Brand Identity */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="ra-corners w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#141414] border border-[#454545] flex items-center justify-center overflow-hidden p-1 shrink-0">
+            {settings?.app_logo_url && !logoFailed ? (
               <img
                 src={settings.app_logo_url}
-                alt={settings.app_name || 'STUDY FOX Logo'}
+                alt={brandTitle}
+                referrerPolicy="no-referrer"
+                onError={() => setLogoFailed(true)}
                 className="w-full h-full object-contain select-none"
               />
             ) : (
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, var(--theme-primary, #06b6d4), var(--theme-secondary, #3b82f6))',
-                }}
-                className="w-full h-full rounded-xl flex items-center justify-center text-white shadow-inner"
-              >
-                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+              <div className="w-full h-full rounded bg-[#090909] border border-[#FF2525]/50 flex items-center justify-center text-[#FF2525]">
+                <Cpu className="w-5 h-5" />
               </div>
             )}
           </div>
+
           <div className="flex flex-col justify-center min-w-0">
-            <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-white flex items-center gap-2 truncate">
-              <span className="truncate">{settings?.app_name || 'STUDY FOX'}</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h1 className="font-display text-sm sm:text-base font-black tracking-[0.06em] uppercase truncate text-[#F5F5F5]">
+                {brandTitle}
+              </h1>
               {user?.vip_active && (
-                <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
-                  <Crown className="w-2.5 h-2.5" /> VIP
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono-tech font-bold uppercase tracking-wider shrink-0 border bg-[#FF2525]/15 border-[#FF2525]/60 text-[#FF2525]">
+                  <Crown className="w-3 h-3" />
+                  VIP
                 </span>
               )}
-            </h1>
-            <p className="text-[11px] sm:text-xs text-slate-400 font-medium truncate">All-in-One Education Hub</p>
+            </div>
+            <p className="font-mono-tech text-[10px] uppercase tracking-[0.14em] truncate leading-tight mt-0.5 text-[#929292]">
+              STUDY COMMAND HUB • {isDark ? 'DARK MODE' : 'LIGHT MODE'}
+            </p>
           </div>
         </div>
 
-        {/* Action icons */}
-        <div className="flex items-center gap-2">
-          {/* Smart Notification Center */}
-          <SmartNotificationCenter user={user} />
-
-          {/* Telegram link button */}
-          {settings?.telegram_channel_url && (
+        {/* Action Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Dark / Light Mode Toggle */}
+          {onToggleColorMode && (
             <button
-              onClick={onOpenTelegram}
-              title="Official Telegram Channel"
-              className="w-8 h-8 rounded-full bg-slate-800/90 hover:bg-slate-700 text-sky-400 border border-slate-700/60 flex items-center justify-center transition-colors"
+              type="button"
+              onClick={onToggleColorMode}
+              title={isDark ? 'Switch to Light Mode (Day Study)' : 'Switch to Dark Mode (Night Study)'}
+              aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="w-11 h-11 rounded-lg bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#FF2525] border border-[#454545] hover:border-[#FF2525] flex items-center justify-center active:scale-95 transition-all"
             >
-              <Send className="w-3.5 h-3.5 -translate-x-0.5" />
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           )}
 
-          {/* Admin Switcher */}
+          <SmartNotificationCenter user={user} />
+
+          {(settings?.study_blunder_telegram_url || settings?.telegram_channel_url) && (
+            <button
+              type="button"
+              onClick={onOpenTelegram}
+              title="Official Telegram Channels"
+              aria-label="Official Telegram Channels"
+              className="w-11 h-11 rounded-lg bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#FF2525] border border-[#454545] hover:border-[#FF2525] flex items-center justify-center active:scale-95 transition-all"
+            >
+              <Send className="w-4 h-4 -translate-x-px" />
+            </button>
+          )}
+
           {isAdminView ? (
             <button
+              type="button"
               onClick={onExitAdmin}
-              className="px-2.5 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-colors"
+              className="min-h-[44px] px-3.5 rounded-lg ra-btn-primary text-xs font-display font-extrabold uppercase tracking-wider"
             >
               Exit Admin
             </button>
           ) : isPrivileged ? (
             <button
+              type="button"
               onClick={onOpenAdmin}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/50 text-xs font-semibold shadow-sm transition-colors"
+              className="min-h-[44px] flex items-center gap-1.5 px-3 rounded-lg bg-[#1D1D1D] hover:bg-[#2A2A2A] text-[#FF2525] border border-[#FF2525]/55 hover:border-[#FF2525] text-xs font-display font-extrabold uppercase tracking-wider transition-colors"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-              Admin
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline sm:inline">Admin</span>
             </button>
           ) : !user ? (
             <button
+              type="button"
               onClick={onOpenAuth}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors"
+              className="min-h-[44px] flex items-center gap-1.5 px-3.5 rounded-lg ra-btn-primary text-xs font-display font-extrabold uppercase tracking-wider"
             >
-              <LogIn className="w-3.5 h-3.5 text-slate-400" />
-              Login
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
             </button>
           ) : null}
         </div>

@@ -7,6 +7,7 @@ import type {
   Platform,
   VipBatch,
   VipPlan,
+  AppThemePreset,
   AppSettings,
   Announcement,
   LoginHistoryEntry,
@@ -20,6 +21,15 @@ import type {
   UserFeedbackRecord,
   FeedbackCategory,
   FeedbackStatus,
+  StudentExamTimer,
+  OfferBoardItem,
+  DailyMotivationItem,
+  StudentXpRecord,
+  LeaderboardEntry,
+  LeaderboardResponse,
+  StudentStudyLog,
+  ParentReportSettings,
+  ParentsReportCardData,
 } from './types.ts';
 import {
   ADMIN_SECTIONS_REGISTRY,
@@ -73,6 +83,22 @@ import {
 export const MIN_VPLINK_WAIT_SECONDS = 200;
 export const MIN_VPLINK_WAIT_MS = MIN_VPLINK_WAIT_SECONDS * 1000;
 export const DEFAULT_APP_TIMEZONE = process.env.APP_TIMEZONE || 'Asia/Kolkata';
+
+export const ALLOWED_APP_THEME_PRESETS: readonly AppThemePreset[] = [
+  'red',
+  'yellow',
+  'pale_white_pink',
+  'blue',
+  'emerald',
+] as const;
+
+export function normalizeAppThemePreset(value: unknown): AppThemePreset {
+  const clean = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if ((ALLOWED_APP_THEME_PRESETS as readonly string[]).includes(clean)) {
+    return clean as AppThemePreset;
+  }
+  return 'red';
+}
 
 export function formatDateInTimezone(dateOrIso: Date | string | number, timeZone = DEFAULT_APP_TIMEZONE): string {
   const d = typeof dateOrIso === 'object' ? dateOrIso : new Date(dateOrIso);
@@ -146,6 +172,8 @@ export function normalizeStoredKeyRecord(k: KeyRecord): KeyRecord {
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'database.json');
+const DATA_BACKUP_FILE = path.join(DATA_DIR, 'database.backup.json');
+const DATA_TMP_FILE = path.join(DATA_DIR, 'database.json.tmp');
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 
 export function ensureUuid(id: string): string {
@@ -243,6 +271,57 @@ interface DatabaseSchema {
   student_notifications?: StudentNotificationRecord[];
   admin_audit_logs?: AdminAuditLogRecord[];
   vip_feature_usage_counts?: Record<string, number>;
+  // Student Growth & Engagement Features
+  offer_board?: OfferBoardItem[];
+  daily_motivations?: DailyMotivationItem[];
+  student_exam_timers?: Record<string, StudentExamTimer>;
+  student_xp?: Record<string, StudentXpRecord>;
+  student_study_logs?: StudentStudyLog[];
+  parent_report_settings?: Record<string, ParentReportSettings>;
+}
+
+const DEFAULT_30_DAY_MOTIVATIONS: { quote: string; author: string }[] = [
+  { quote: 'Sapne wo nahi jo neend me aate hain, sapne wo hain jo aapko sone nahi dete.', author: 'Dr. A.P.J. Abdul Kalam' },
+  { quote: 'Roz thoda-thoda padhna ek din aapko topper bana deta hai — consistency hi asli power hai.', author: 'Study Blunder' },
+  { quote: 'Aaj ka hard work kal ka rank banega. Ek ghanta aur focus karo!', author: 'Study Blunder' },
+  { quote: 'Jab tak todenge nahi, tab tak chhodenge nahi. Apne exam goal par dhyan rakho.', author: 'Study Blunder' },
+  { quote: 'Success kisi luck ka result nahi, roz ke disciplined revision ka result hota hai.', author: 'Study Blunder' },
+  { quote: 'Har subah ek naya mauka hai apne kal se behtar banne ka.', author: 'Study Blunder' },
+  { quote: 'Jo student roz practice karta hai, exam hall me wahi sabse calm rehta hai.', author: 'Study Blunder' },
+  { quote: 'Distraction ko 60 minute ke liye door rakho, result khud bol uthega.', author: 'Study Blunder' },
+  { quote: 'Chhote daily targets poore karo — bade exams apne aap crack ho jayenge.', author: 'Study Blunder' },
+  { quote: 'Mushkil chapters se bhaago mat, wahi aapko baaki sabse aage nikalte hain.', author: 'Study Blunder' },
+  { quote: 'Revision bina padhai adhoori hai — aaj 30 minute purane notes zaroor revise karo.', author: 'Study Blunder' },
+  { quote: 'Apne parents ki muskaan yaad rakho, thakaan apne aap gayab ho jayegi.', author: 'Study Blunder' },
+  { quote: 'Mock test me kam marks aana haar nahi hai, apni kamzori pehchanne ka best chance hai.', author: 'Study Blunder' },
+  { quote: 'Aaj ka ek extra solved question exam me aapki rank hazaro upar le ja sakta hai.', author: 'Study Blunder' },
+  { quote: 'Waqt sabke paas 24 ghante hi hai — farq bas is baat ka hai ki aap kitne focus se padhte hain.', author: 'Study Blunder' },
+  { quote: 'Khud par bharosa rakho; jitni gehri taiyari hogi, utni badi jeet hogi.', author: 'Study Blunder' },
+  { quote: 'Phone scroll karne se sirf time jata hai, notes padhne se future banta hai.', author: 'Study Blunder' },
+  { quote: 'Ek din ka break bhi rhythm tod sakta hai — aaj kam se kam ek topic zaroor finish karo.', author: 'Study Blunder' },
+  { quote: 'Smart study + consistent daily effort = guaranteed selection.', author: 'Study Blunder' },
+  { quote: 'Galtiyon se daro mat; har galat sawal aapko exam ke sahi answer ke kareeb le jata hai.', author: 'Study Blunder' },
+  { quote: 'Subah ki shanti me padha hua concept lambe samay tak yaad rehta hai.', author: 'Study Blunder' },
+  { quote: 'Aapka competition kisi aur se nahi, aapke kal wale version se hai.', author: 'Study Blunder' },
+  { quote: 'Discipline wo bridge hai jo aapke target aur aapke selection ko jodta hai.', author: 'Study Blunder' },
+  { quote: 'Jab mann bole kal padhenge, tabhi 15 minute ke liye kitaab khol lo — momentum ban jayega.', author: 'Study Blunder' },
+  { quote: 'Har topper kabhi beginner tha, bas usne roz seekhna band nahi kiya.', author: 'Study Blunder' },
+  { quote: 'Concept clear hoga toh koi bhi tricky question aasan lagne lagega.', author: 'Study Blunder' },
+  { quote: 'Mehnat itni khamoshi se karo ki aapka result shor macha de.', author: 'Study Blunder' },
+  { quote: 'Aaj ka focus session aapko aapke dream college aur dream rank ke aur kareeb layega.', author: 'Study Blunder' },
+  { quote: 'Thoda aur sabr, thodi aur mehnat — manzil bahut kareeb hai.', author: 'Study Blunder' },
+  { quote: '30 din ki lagatar mehnat aapki aadat aur aapka confidence dono badal deti hai!', author: 'Study Blunder' },
+];
+
+export function getDefault30DayMotivations(): DailyMotivationItem[] {
+  const now = new Date().toISOString();
+  return DEFAULT_30_DAY_MOTIVATIONS.map((item, index) => ({
+    day_number: index + 1,
+    quote: item.quote,
+    author: item.author,
+    image_url: '',
+    updated_at: now,
+  }));
 }
 
 function getInitialDatabase(): DatabaseSchema {
@@ -273,13 +352,17 @@ function getInitialDatabase(): DatabaseSchema {
       key_generation_enabled: true,
       shortener_url: 'https://shrinkme.io/edu-portal-redirect',
       tutorial_video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      telegram_channel_url: 'https://t.me/education_hub_updates',
+      telegram_channel_url: 'https://t.me/studyblunder',
+      study_blunder_telegram_url: 'https://t.me/studyblunder',
+      study_blunder_telegram_label: 'Study Blunder Telegram',
+      study_fox_telegram_url: 'https://t.me/studyfoxofficial',
+      study_fox_telegram_label: 'Study Fox Telegram',
       telegram_popup_enabled: true,
       telegram_popup_title: 'Join Telegram Channel',
       telegram_popup_message: 'Get instant updates on new batches, free access keys, and announcements.',
       telegram_popup_button_text: 'Join Channel',
       telegram_popup_close_text: 'Maybe Later',
-      telegram_popup_reminder_text: 'Official Study Fox Community',
+      telegram_popup_reminder_text: 'Official Study Blunder Community',
       telegram_popup_show_on_resume: false,
       maintenance_mode: false,
       login_enabled: true,
@@ -292,23 +375,34 @@ function getInitialDatabase(): DatabaseSchema {
       vip_payment_amount: 299,
       vip_payment_instructions: 'Scan the QR code using any UPI app (GPay, PhonePe, Paytm), complete the payment, and submit your payment screenshot below for verification.',
       vip_payment_utr_required: false,
+      home_single_vip_label: 'VIP',
+      home_single_vip_price: 49,
+      home_single_vip_duration_days: 30,
+      home_single_vip_destination: 'in_app_single_vip',
+      home_single_vip_url: '',
+      home_all_vip_label: 'ALL VIP',
+      home_all_vip_price: 149,
+      home_all_vip_duration_days: 30,
+      home_all_vip_destination: 'in_app_all_vip',
+      home_all_vip_url: '',
       vip_grace_period_hours: 24,
       referral_reward_days: 7,
       referral_program_enabled: true,
       referral_discount_config: getDefaultReferralDiscountConfig(),
-      app_name: 'STUDY FOX',
+      app_name: 'STUDY BLUNDER',
       app_logo_url: '/logo.png',
-      theme_primary: '#6366f1',
-      theme_secondary: '#8b5cf6',
-      theme_background: '#070B14',
-      theme_text: '#f8fafc',
-      theme_button: '#4f46e5',
-      vip_theme_background: '#090d16',
-      vip_theme_card: '#0f172a',
-      vip_theme_accent: '#f59e0b',
-      vip_theme_text: '#f8fafc',
-      vip_theme_button: '#eab308',
-      vip_theme_border: '#1e293b',
+      app_theme_preset: 'red',
+      theme_primary: '#FF2525',
+      theme_secondary: '#C90000',
+      theme_background: '#090909',
+      theme_text: '#F5F5F5',
+      theme_button: '#FF2525',
+      vip_theme_background: '#090909',
+      vip_theme_card: '#1D1D1D',
+      vip_theme_accent: '#FF2525',
+      vip_theme_text: '#F5F5F5',
+      vip_theme_button: '#FF2525',
+      vip_theme_border: '#454545',
       announcement_slider_enabled: true,
       announcement_slide_interval_seconds: 5,
       support_enabled: true,
@@ -364,6 +458,12 @@ function getInitialDatabase(): DatabaseSchema {
     student_notifications: [],
     admin_audit_logs: [],
     vip_feature_usage_counts: {},
+    offer_board: [],
+    daily_motivations: getDefault30DayMotivations(),
+    student_exam_timers: {},
+    student_xp: {},
+    student_study_logs: [],
+    parent_report_settings: {},
   };
 }
 
@@ -371,6 +471,15 @@ export class StorageEngine {
   private static instance: StorageEngine;
   private db: DatabaseSchema;
   private supabase: SupabaseClient | null = null;
+  private cloudStorageClient: SupabaseClient | null = null;
+  private readonly cloudStorageBucket = 'study-blunder-cloud-db';
+  private readonly cloudStorageObjectPath = 'database.json';
+  private cloudSyncInFlight: Promise<void> | null = null;
+  private pendingCloudPayload: string | null = null;
+  private lastCloudSyncAt: string | null = null;
+  private supabaseConfiguredFlag = false;
+  private supabaseSchemaReady = false;
+  private supabaseSchemaError: string | null = null;
   private pending_verifications = new Map<string, PendingVerificationAttempt>();
   private claiming_key_users = new Set<string>();
   private redeeming_keys = new Set<string>();
@@ -427,12 +536,14 @@ export class StorageEngine {
     const sbUrl = process.env.SUPABASE_URL;
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (sbUrl && sbKey && !sbUrl.includes('your-project')) {
+      this.supabaseConfiguredFlag = true;
       try {
         this.supabase = createClient(sbUrl, sbKey, {
           auth: { autoRefreshToken: false, persistSession: false },
         });
       } catch (err) {
         console.warn('[STORAGE] Failed to initialize Supabase client:', err);
+        this.supabaseSchemaError = err instanceof Error ? err.message : 'Failed to initialize Supabase client';
       }
     }
   }
@@ -455,11 +566,21 @@ export class StorageEngine {
   }
 
   private loadDatabase(): DatabaseSchema {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const readJsonFileSafe = (filePath: string): any | null => {
+      try {
+        if (!fs.existsSync(filePath)) return null;
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        if (!raw || !raw.trim()) return null;
+        return JSON.parse(raw);
+      } catch (err) {
+        console.warn(`[STORAGE] Failed to parse ${path.basename(filePath)}:`, err);
+        return null;
+      }
+    };
+
     try {
-      if (fs.existsSync(DATA_FILE)) {
-        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
+      const parsed = readJsonFileSafe(DATA_FILE) || readJsonFileSafe(DATA_BACKUP_FILE);
+      if (parsed) {
         // Ensure all keys exist
         const initial = getInitialDatabase();
         return {
@@ -487,6 +608,8 @@ export class StorageEngine {
               vip_device_last_reset_by: u.vip_device_last_reset_by || null,
               vip_sharing_attempt_count: typeof u.vip_sharing_attempt_count === 'number' ? u.vip_sharing_attempt_count : 0,
               vip_last_sharing_attempt_at: u.vip_last_sharing_attempt_at || null,
+              vip_allowed_platform_ids: Array.isArray(u.vip_allowed_platform_ids) ? u.vip_allowed_platform_ids.filter(Boolean) : [],
+              vip_platform_expiries: u.vip_platform_expiries && typeof u.vip_platform_expiries === 'object' ? u.vip_platform_expiries : {},
               free_access_expires_at: u.free_access_expires_at || null,
             })),
           platforms: (parsed.platforms || initial.platforms).map((p: Platform) => ({
@@ -496,6 +619,7 @@ export class StorageEngine {
           })),
           vip_plans: (parsed.vip_plans || initial.vip_plans).map((pl: VipPlan) => ({
             ...pl,
+            plan_scope: pl.plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
             duration_days: pl.duration_days !== undefined && pl.duration_days !== null ? pl.duration_days : (pl.duration_months ? pl.duration_months * 30 : 30),
           })),
           announcements: (parsed.announcements || initial.announcements).map((a: Announcement, idx: number) => ({
@@ -516,7 +640,32 @@ export class StorageEngine {
             vip_payment_amount: typeof parsed.settings?.vip_payment_amount === 'number' ? parsed.settings.vip_payment_amount : (initial.settings.vip_payment_amount ?? 299),
             vip_payment_instructions: parsed.settings?.vip_payment_instructions ?? initial.settings.vip_payment_instructions ?? '',
             vip_payment_utr_required: Boolean(parsed.settings?.vip_payment_utr_required),
-            vip_theme_background: parsed.settings?.vip_theme_background || initial.settings.vip_theme_background || '#090d16',
+            home_single_vip_label: parsed.settings?.home_single_vip_label || initial.settings.home_single_vip_label || 'VIP',
+            home_single_vip_price:
+              typeof parsed.settings?.home_single_vip_price === 'number'
+                ? parsed.settings.home_single_vip_price
+                : (initial.settings.home_single_vip_price ?? 49),
+            home_single_vip_duration_days:
+              typeof parsed.settings?.home_single_vip_duration_days === 'number' && parsed.settings.home_single_vip_duration_days > 0
+                ? parsed.settings.home_single_vip_duration_days
+                : (initial.settings.home_single_vip_duration_days ?? 30),
+            home_single_vip_destination:
+              parsed.settings?.home_single_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_single_vip',
+            home_single_vip_url: parsed.settings?.home_single_vip_url ?? '',
+            home_all_vip_label: parsed.settings?.home_all_vip_label || initial.settings.home_all_vip_label || 'ALL VIP',
+            home_all_vip_price:
+              typeof parsed.settings?.home_all_vip_price === 'number'
+                ? parsed.settings.home_all_vip_price
+                : (initial.settings.home_all_vip_price ?? 149),
+            home_all_vip_duration_days:
+              typeof parsed.settings?.home_all_vip_duration_days === 'number' && parsed.settings.home_all_vip_duration_days > 0
+                ? parsed.settings.home_all_vip_duration_days
+                : (initial.settings.home_all_vip_duration_days ?? 30),
+            home_all_vip_destination:
+              parsed.settings?.home_all_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_all_vip',
+            home_all_vip_url: parsed.settings?.home_all_vip_url ?? '',
+            app_theme_preset: normalizeAppThemePreset(parsed.settings?.app_theme_preset),
+            vip_theme_background: parsed.settings?.vip_theme_background || initial.settings.vip_theme_background || '#090909',
             vip_theme_card: parsed.settings?.vip_theme_card || initial.settings.vip_theme_card || '#0f172a',
             vip_theme_accent: parsed.settings?.vip_theme_accent || initial.settings.vip_theme_accent || '#f59e0b',
             vip_theme_text: parsed.settings?.vip_theme_text || initial.settings.vip_theme_text || '#f8fafc',
@@ -524,6 +673,19 @@ export class StorageEngine {
             vip_theme_border: parsed.settings?.vip_theme_border || initial.settings.vip_theme_border || '#1e293b',
             announcement_slider_enabled: parsed.settings?.announcement_slider_enabled ?? true,
             announcement_slide_interval_seconds: parsed.settings?.announcement_slide_interval_seconds ?? 5,
+            study_blunder_telegram_url:
+              parsed.settings?.study_blunder_telegram_url ??
+              parsed.settings?.telegram_channel_url ??
+              initial.settings.study_blunder_telegram_url ??
+              'https://t.me/studyblunder',
+            study_blunder_telegram_label:
+              parsed.settings?.study_blunder_telegram_label || 'Study Blunder Telegram',
+            study_fox_telegram_url:
+              parsed.settings?.study_fox_telegram_url ??
+              initial.settings.study_fox_telegram_url ??
+              'https://t.me/studyfoxofficial',
+            study_fox_telegram_label:
+              parsed.settings?.study_fox_telegram_label || 'Study Fox Telegram',
             telegram_popup_title: parsed.settings?.telegram_popup_title ?? initial.settings.telegram_popup_title,
             telegram_popup_message: parsed.settings?.telegram_popup_message ?? initial.settings.telegram_popup_message,
             telegram_popup_button_text: parsed.settings?.telegram_popup_button_text ?? initial.settings.telegram_popup_button_text,
@@ -604,6 +766,9 @@ export class StorageEngine {
             ...p,
             request_id: p.request_id || `SF-VIP-2026-${String(p.id || idx).replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase().padStart(5, '8')}`,
             purchase_source: p.purchase_source || 'in_app',
+            vip_scope: p.vip_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
+            selected_platform_id: p.selected_platform_id || null,
+            selected_platform_name: p.selected_platform_name || null,
           })),
           vip_device_logs: Array.isArray(parsed.vip_device_logs) ? parsed.vip_device_logs : [],
           platform_usage_logs: Array.isArray(parsed.platform_usage_logs) ? parsed.platform_usage_logs : [],
@@ -635,6 +800,24 @@ export class StorageEngine {
           student_notifications: Array.isArray(parsed.student_notifications) ? parsed.student_notifications : [],
           admin_audit_logs: Array.isArray(parsed.admin_audit_logs) ? parsed.admin_audit_logs : [],
           vip_feature_usage_counts: parsed.vip_feature_usage_counts && typeof parsed.vip_feature_usage_counts === 'object' ? parsed.vip_feature_usage_counts : {},
+          offer_board: Array.isArray(parsed.offer_board) ? parsed.offer_board : [],
+          daily_motivations:
+            Array.isArray(parsed.daily_motivations) && parsed.daily_motivations.length > 0
+              ? parsed.daily_motivations
+              : getDefault30DayMotivations(),
+          student_exam_timers:
+            parsed.student_exam_timers && typeof parsed.student_exam_timers === 'object'
+              ? parsed.student_exam_timers
+              : {},
+          student_xp:
+            parsed.student_xp && typeof parsed.student_xp === 'object'
+              ? parsed.student_xp
+              : {},
+          student_study_logs: Array.isArray(parsed.student_study_logs) ? parsed.student_study_logs : [],
+          parent_report_settings:
+            parsed.parent_report_settings && typeof parsed.parent_report_settings === 'object'
+              ? parsed.parent_report_settings
+              : {},
         };
       }
     } catch (err) {
@@ -646,9 +829,324 @@ export class StorageEngine {
     return fresh;
   }
 
-  private saveDatabase(data: DatabaseSchema): void {
+  private normalizeDatabasePayload(parsed: any): DatabaseSchema {
+    const initial = getInitialDatabase();
+    if (!parsed || typeof parsed !== 'object') return initial;
+    return {
+      ...initial,
+      ...parsed,
+      users: (Array.isArray(parsed.users) && parsed.users.length > 0 ? parsed.users : initial.users)
+        .filter((u: User) => !['superadmin@education.com', 'admin@education.com', 'student@education.com', 'vipstudent@education.com'].includes(u.email?.toLowerCase()))
+        .map((u: User) => ({
+          ...u,
+          role: u.email?.toLowerCase() === 'bhaskardattmishra0101@gmail.com' ? 'super_admin' : u.role,
+          name: u.name || '',
+          is_blocked: Boolean(u.is_blocked),
+          blocked_at: u.blocked_at || null,
+          blocked_reason: u.blocked_reason || null,
+          blocked_by: u.blocked_by || null,
+          vip_bound_device_id: u.vip_bound_device_id || null,
+          vip_bound_session_id: u.vip_bound_session_id || null,
+          vip_device_label: u.vip_device_label || null,
+          vip_device_bound_at: u.vip_device_bound_at || null,
+          vip_device_last_seen_at: u.vip_device_last_seen_at || null,
+          vip_device_last_ip: u.vip_device_last_ip || null,
+          vip_device_last_ua: u.vip_device_last_ua || null,
+          vip_device_reset_count: typeof u.vip_device_reset_count === 'number' ? u.vip_device_reset_count : 0,
+          vip_device_last_reset_at: u.vip_device_last_reset_at || null,
+          vip_device_last_reset_by: u.vip_device_last_reset_by || null,
+          vip_sharing_attempt_count: typeof u.vip_sharing_attempt_count === 'number' ? u.vip_sharing_attempt_count : 0,
+          vip_last_sharing_attempt_at: u.vip_last_sharing_attempt_at || null,
+          vip_allowed_platform_ids: Array.isArray(u.vip_allowed_platform_ids) ? u.vip_allowed_platform_ids.filter(Boolean) : [],
+          vip_platform_expiries: u.vip_platform_expiries && typeof u.vip_platform_expiries === 'object' ? u.vip_platform_expiries : {},
+          free_access_expires_at: u.free_access_expires_at || null,
+        })),
+      platforms: (Array.isArray(parsed.platforms) ? parsed.platforms : initial.platforms).map((p: Platform) => ({
+        ...p,
+        access_type: p.access_type || 'normal',
+        vip_target_url: p.vip_target_url || '',
+      })),
+      vip_plans: (Array.isArray(parsed.vip_plans) ? parsed.vip_plans : initial.vip_plans).map((pl: VipPlan) => ({
+        ...pl,
+        plan_scope: pl.plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
+        duration_days: pl.duration_days !== undefined && pl.duration_days !== null ? pl.duration_days : (pl.duration_months ? pl.duration_months * 30 : 30),
+      })),
+      announcements: (Array.isArray(parsed.announcements) ? parsed.announcements : initial.announcements).map((a: Announcement, idx: number) => ({
+        ...a,
+        link_url: a.link_url || '',
+        display_order: typeof a.display_order === 'number' ? a.display_order : idx + 1,
+        start_date: a.start_date || null,
+        end_date: a.end_date || null,
+      })),
+      settings: {
+        ...initial.settings,
+        ...(parsed.settings || {}),
+        home_single_vip_label: parsed.settings?.home_single_vip_label || initial.settings.home_single_vip_label || 'VIP',
+        home_single_vip_price:
+          typeof parsed.settings?.home_single_vip_price === 'number'
+            ? parsed.settings.home_single_vip_price
+            : (initial.settings.home_single_vip_price ?? 49),
+        home_single_vip_duration_days:
+          typeof parsed.settings?.home_single_vip_duration_days === 'number' && parsed.settings.home_single_vip_duration_days > 0
+            ? parsed.settings.home_single_vip_duration_days
+            : (initial.settings.home_single_vip_duration_days ?? 30),
+        home_single_vip_destination:
+          parsed.settings?.home_single_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_single_vip',
+        home_single_vip_url: parsed.settings?.home_single_vip_url ?? '',
+        home_all_vip_label: parsed.settings?.home_all_vip_label || initial.settings.home_all_vip_label || 'ALL VIP',
+        home_all_vip_price:
+          typeof parsed.settings?.home_all_vip_price === 'number'
+            ? parsed.settings.home_all_vip_price
+            : (initial.settings.home_all_vip_price ?? 149),
+        home_all_vip_duration_days:
+          typeof parsed.settings?.home_all_vip_duration_days === 'number' && parsed.settings.home_all_vip_duration_days > 0
+            ? parsed.settings.home_all_vip_duration_days
+            : (initial.settings.home_all_vip_duration_days ?? 30),
+        home_all_vip_destination:
+          parsed.settings?.home_all_vip_destination === 'custom_url' ? 'custom_url' : 'in_app_all_vip',
+        home_all_vip_url: parsed.settings?.home_all_vip_url ?? '',
+        app_theme_preset: normalizeAppThemePreset(parsed.settings?.app_theme_preset),
+        study_blunder_telegram_url:
+          parsed.settings?.study_blunder_telegram_url ??
+          parsed.settings?.telegram_channel_url ??
+          initial.settings.study_blunder_telegram_url ??
+          'https://t.me/studyblunder',
+        study_blunder_telegram_label:
+          parsed.settings?.study_blunder_telegram_label || 'Study Blunder Telegram',
+        study_fox_telegram_url:
+          parsed.settings?.study_fox_telegram_url ??
+          initial.settings.study_fox_telegram_url ??
+          'https://t.me/studyfoxofficial',
+        study_fox_telegram_label:
+          parsed.settings?.study_fox_telegram_label || 'Study Fox Telegram',
+        festival_configs_json: normalizeAllFestivalConfigs(parsed.settings?.festival_configs_json),
+        referral_discount_config:
+          parsed.settings?.referral_discount_config && typeof parsed.settings.referral_discount_config === 'object'
+            ? {
+                ...getDefaultReferralDiscountConfig(),
+                ...parsed.settings.referral_discount_config,
+              }
+            : getDefaultReferralDiscountConfig(),
+      },
+      payment_records: (Array.isArray(parsed.payment_records) ? parsed.payment_records : initial.payment_records).map((p: PaymentRecord, idx: number) => ({
+        ...p,
+        request_id: p.request_id || `SF-VIP-2026-${String(p.id || idx).replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase().padStart(5, '8')}`,
+        purchase_source: p.purchase_source || 'in_app',
+        vip_scope: p.vip_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
+        selected_platform_id: p.selected_platform_id || null,
+        selected_platform_name: p.selected_platform_name || null,
+      })),
+      key_records: (Array.isArray(parsed.key_records) ? parsed.key_records : initial.key_records)
+        .filter((k: KeyRecord) => {
+          const t = String(k.token || '').trim();
+          return (
+            !t.startsWith('FLOW:') &&
+            !t.startsWith('PLATLOG:') &&
+            !t.startsWith('FESTIVAL_STATE:') &&
+            !t.startsWith('FEEDBACK_ITEM:') &&
+            !t.startsWith('PW_RESET:')
+          );
+        })
+        .map((k: KeyRecord) => normalizeStoredKeyRecord(k)),
+      vip_device_logs: Array.isArray(parsed.vip_device_logs) ? parsed.vip_device_logs : [],
+      platform_usage_logs: Array.isArray(parsed.platform_usage_logs) ? parsed.platform_usage_logs : [],
+      user_feedback: Array.isArray(parsed.user_feedback) ? parsed.user_feedback : [],
+      pending_verifications: Array.isArray(parsed.pending_verifications) ? parsed.pending_verifications : [],
+      password_reset_tokens: Array.isArray(parsed.password_reset_tokens) ? parsed.password_reset_tokens : [],
+      admin_permissions: parsed.admin_permissions && typeof parsed.admin_permissions === 'object' ? parsed.admin_permissions : {},
+      user_referral_permissions: parsed.user_referral_permissions && typeof parsed.user_referral_permissions === 'object' ? parsed.user_referral_permissions : {},
+      vip_feature_state:
+        parsed.vip_feature_state && typeof parsed.vip_feature_state === 'object'
+          ? {
+              ...getDefaultVipFeatureManagementState(),
+              ...parsed.vip_feature_state,
+              features: {
+                ...getDefaultVipFeatureManagementState().features,
+                ...(parsed.vip_feature_state.features || {}),
+              },
+            }
+          : getDefaultVipFeatureManagementState(),
+      study_streaks: parsed.study_streaks && typeof parsed.study_streaks === 'object' ? parsed.study_streaks : {},
+      exam_schedules: Array.isArray(parsed.exam_schedules) && parsed.exam_schedules.length > 0 ? parsed.exam_schedules : getInitialGlobalExams(),
+      study_timetables: Array.isArray(parsed.study_timetables) ? parsed.study_timetables : [],
+      learning_resources: Array.isArray(parsed.learning_resources) && parsed.learning_resources.length > 0 ? parsed.learning_resources : getInitialLearningResources(),
+      student_resource_interactions: Array.isArray(parsed.student_resource_interactions) ? parsed.student_resource_interactions : [],
+      vip_announcements: Array.isArray(parsed.vip_announcements) ? parsed.vip_announcements : [],
+      vip_mock_tests: Array.isArray(parsed.vip_mock_tests) && parsed.vip_mock_tests.length > 0 ? parsed.vip_mock_tests : getInitialVipMockTests(),
+      vip_mock_test_attempts: Array.isArray(parsed.vip_mock_test_attempts) ? parsed.vip_mock_test_attempts : [],
+      priority_support_tickets: Array.isArray(parsed.priority_support_tickets) ? parsed.priority_support_tickets : [],
+      vip_referrals: Array.isArray(parsed.vip_referrals) ? parsed.vip_referrals : [],
+      student_notifications: Array.isArray(parsed.student_notifications) ? parsed.student_notifications : [],
+      admin_audit_logs: Array.isArray(parsed.admin_audit_logs) ? parsed.admin_audit_logs : [],
+      vip_feature_usage_counts: parsed.vip_feature_usage_counts && typeof parsed.vip_feature_usage_counts === 'object' ? parsed.vip_feature_usage_counts : {},
+      offer_board: Array.isArray(parsed.offer_board) ? parsed.offer_board : [],
+      daily_motivations:
+        Array.isArray(parsed.daily_motivations) && parsed.daily_motivations.length > 0
+          ? parsed.daily_motivations
+          : getDefault30DayMotivations(),
+      student_exam_timers:
+        parsed.student_exam_timers && typeof parsed.student_exam_timers === 'object'
+          ? parsed.student_exam_timers
+          : {},
+      student_xp:
+        parsed.student_xp && typeof parsed.student_xp === 'object'
+          ? parsed.student_xp
+          : {},
+      student_study_logs: Array.isArray(parsed.student_study_logs) ? parsed.student_study_logs : [],
+      parent_report_settings:
+        parsed.parent_report_settings && typeof parsed.parent_report_settings === 'object'
+          ? parsed.parent_report_settings
+          : {},
+    };
+  }
+
+  private scheduleCloudStorageSync(serialized: string): void {
+    if (!this.cloudStorageClient) return;
+    this.pendingCloudPayload = serialized;
+    if (this.cloudSyncInFlight) return;
+
+    const drainQueue = async () => {
+      try {
+        while (this.pendingCloudPayload && this.cloudStorageClient) {
+          const payloadToUpload = this.pendingCloudPayload;
+          this.pendingCloudPayload = null;
+          const buffer = Buffer.from(payloadToUpload, 'utf-8');
+          const { error } = await this.cloudStorageClient.storage
+            .from(this.cloudStorageBucket)
+            .upload(this.cloudStorageObjectPath, buffer, {
+              upsert: true,
+              contentType: 'application/json',
+              cacheControl: '0',
+            });
+          if (error) {
+            console.warn('[STORAGE] Automatic cloud storage sync warning:', error.message);
+          } else {
+            this.lastCloudSyncAt = new Date().toISOString();
+          }
+        }
+      } catch (err) {
+        console.warn('[STORAGE] Automatic cloud storage sync error:', err);
+      } finally {
+        this.cloudSyncInFlight = null;
+        if (this.pendingCloudPayload && this.cloudStorageClient) {
+          this.scheduleCloudStorageSync(this.pendingCloudPayload);
+        }
+      }
+    };
+
+    this.cloudSyncInFlight = drainQueue();
+  }
+
+  private async activateAutomaticCloudStorage(client: SupabaseClient, forcePushLocal = false): Promise<boolean> {
+    try {
+      // 1. Ensure private cloud database bucket exists automatically
+      const { error: bucketCheckErr } = await client.storage.getBucket(this.cloudStorageBucket);
+      if (bucketCheckErr) {
+        const { error: createErr } = await client.storage.createBucket(this.cloudStorageBucket, {
+          public: false,
+        });
+        if (createErr && !String(createErr.message || '').toLowerCase().includes('already exists')) {
+          console.warn('[STORAGE] Could not create automatic cloud bucket:', createErr.message);
+          return false;
+        }
+      }
+
+      // 2. If not forcing local push, check if a persisted cloud snapshot exists and restore it automatically
+      if (!forcePushLocal) {
+        const { data: blob, error: dlErr } = await client.storage
+          .from(this.cloudStorageBucket)
+          .download(this.cloudStorageObjectPath);
+
+        if (!dlErr && blob) {
+          try {
+            const text = await blob.text();
+            if (text && text.trim()) {
+              const remoteParsed = JSON.parse(text);
+              const normalizedRemote = this.normalizeDatabasePayload(remoteParsed);
+
+              // Preserve Super Admin guarantee
+              if (!normalizedRemote.users.some((u) => u.email?.toLowerCase() === 'bhaskardattmishra0101@gmail.com')) {
+                const defaultSuper = getInitialDatabase().users[0];
+                if (defaultSuper) normalizedRemote.users.unshift(defaultSuper);
+              }
+
+              const localUpdatedMs = Date.parse(this.db.settings?.updated_at || '') || 0;
+              const remoteUpdatedMs = Date.parse(normalizedRemote.settings?.updated_at || '') || 0;
+              const localRichness =
+                (this.db.platforms?.length || 0) +
+                (this.db.vip_plans?.length || 0) +
+                (this.db.payment_records?.length || 0) +
+                Math.max(0, (this.db.users?.length || 1) - 1);
+              const remoteRichness =
+                (normalizedRemote.platforms?.length || 0) +
+                (normalizedRemote.vip_plans?.length || 0) +
+                (normalizedRemote.payment_records?.length || 0) +
+                Math.max(0, (normalizedRemote.users?.length || 1) - 1);
+
+              // Restore from cloud when cloud is at least as fresh, OR local is fresh/empty while cloud has data
+              if (remoteUpdatedMs >= localUpdatedMs || (localRichness === 0 && remoteRichness > 0)) {
+                this.db = normalizedRemote;
+                this.writeLocalFilesOnly(this.db);
+                console.log(
+                  `[STORAGE] Restored permanent cloud snapshot automatically (${this.db.platforms.length} platforms, ${this.db.vip_plans.length} plans, ${this.db.users.length} users)`
+                );
+              }
+            }
+          } catch (parseErr) {
+            console.warn('[STORAGE] Failed to parse cloud snapshot, will overwrite with current DB:', parseErr);
+          }
+        }
+      }
+
+      // 3. Activate automatic cloud storage client and push current snapshot immediately
+      this.cloudStorageClient = client;
+      this.supabase = null;
+      this.supabaseConfiguredFlag = true;
+      this.supabaseSchemaReady = true;
+      this.supabaseSchemaError = null;
+
+      const serialized = JSON.stringify(this.db, null, 2);
+      const { error: uploadErr } = await client.storage
+        .from(this.cloudStorageBucket)
+        .upload(this.cloudStorageObjectPath, Buffer.from(serialized, 'utf-8'), {
+          upsert: true,
+          contentType: 'application/json',
+          cacheControl: '0',
+        });
+
+      if (uploadErr) {
+        console.warn('[STORAGE] Initial automatic cloud upload warning:', uploadErr.message);
+      } else {
+        this.lastCloudSyncAt = new Date().toISOString();
+      }
+
+      console.log(`[STORAGE] Automatic Supabase Cloud Storage persistence ACTIVE (bucket: ${this.cloudStorageBucket})`);
+      return true;
+    } catch (err) {
+      console.warn('[STORAGE] Automatic cloud storage activation failed:', err);
+      return false;
+    }
+  }
+
+  private writeLocalFilesOnly(data: DatabaseSchema): string {
     this.ensureDataDir();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    const serialized = JSON.stringify(data, null, 2);
+    // Atomic write to prevent half-written JSON corruption on sudden container stop/restart
+    fs.writeFileSync(DATA_TMP_FILE, serialized, 'utf-8');
+    fs.renameSync(DATA_TMP_FILE, DATA_FILE);
+    try {
+      fs.writeFileSync(DATA_BACKUP_FILE, serialized, 'utf-8');
+    } catch {
+      // Non-fatal backup write failure
+    }
+    return serialized;
+  }
+
+  private saveDatabase(data: DatabaseSchema): void {
+    const serialized = this.writeLocalFilesOnly(data);
+    if (this.cloudStorageClient) {
+      this.scheduleCloudStorageSync(serialized);
+    }
   }
 
   // --- Users ---
@@ -709,6 +1207,13 @@ export class StorageEngine {
               ? true
               : Boolean(remoteUser.vip_active),
           vip_expires_at: remoteUser.vip_expires_at ?? null,
+          vip_allowed_platform_ids: Array.isArray(remoteUser.vip_allowed_platform_ids)
+            ? remoteUser.vip_allowed_platform_ids
+            : localUser?.vip_allowed_platform_ids || [],
+          vip_platform_expiries:
+            remoteUser.vip_platform_expiries && typeof remoteUser.vip_platform_expiries === 'object'
+              ? remoteUser.vip_platform_expiries
+              : localUser?.vip_platform_expiries || {},
           free_access_expires_at: remoteUser.free_access_expires_at ?? null,
           is_blocked: Boolean(remoteUser.is_blocked),
           blocked_at: remoteUser.blocked_at || null,
@@ -820,79 +1325,99 @@ export class StorageEngine {
   public async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     const idx = this.db.users.findIndex((u) => u.id === id);
     if (idx === -1) return undefined;
+    const prevUser = { ...this.db.users[idx] };
     const { id: _ignoreId, created_at: _ignoreCreated, ...safeUpdates } = updates;
     this.db.users[idx] = { ...this.db.users[idx], ...safeUpdates };
     this.saveDatabase(this.db);
 
     if (this.supabase) {
-      try {
-        const payload: Record<string, unknown> = {};
-        if (safeUpdates.email !== undefined) payload.email = safeUpdates.email.toLowerCase();
-        if (safeUpdates.password_hash !== undefined) payload.password_hash = safeUpdates.password_hash;
-        if (safeUpdates.role !== undefined) payload.role = safeUpdates.role;
-        if (safeUpdates.vip_active !== undefined) payload.vip_active = safeUpdates.vip_active;
-        if (safeUpdates.vip_expires_at !== undefined) payload.vip_expires_at = safeUpdates.vip_expires_at;
-        if (safeUpdates.free_access_expires_at !== undefined) payload.free_access_expires_at = safeUpdates.free_access_expires_at;
-        if (safeUpdates.name !== undefined) payload.name = safeUpdates.name;
-        if (safeUpdates.is_blocked !== undefined) payload.is_blocked = safeUpdates.is_blocked;
-        if (safeUpdates.blocked_at !== undefined) payload.blocked_at = safeUpdates.blocked_at;
-        if (safeUpdates.blocked_reason !== undefined) payload.blocked_reason = safeUpdates.blocked_reason;
-        if (safeUpdates.blocked_by !== undefined) payload.blocked_by = safeUpdates.blocked_by;
-        if (safeUpdates.vip_bound_device_id !== undefined) payload.vip_bound_device_id = safeUpdates.vip_bound_device_id;
-        if (safeUpdates.vip_bound_session_id !== undefined) payload.vip_bound_session_id = safeUpdates.vip_bound_session_id;
-        if (safeUpdates.vip_device_label !== undefined) payload.vip_device_label = safeUpdates.vip_device_label;
-        if (safeUpdates.vip_device_bound_at !== undefined) payload.vip_device_bound_at = safeUpdates.vip_device_bound_at;
-        if (safeUpdates.vip_device_last_seen_at !== undefined) payload.vip_device_last_seen_at = safeUpdates.vip_device_last_seen_at;
-        if (safeUpdates.vip_device_last_ip !== undefined) payload.vip_device_last_ip = safeUpdates.vip_device_last_ip;
-        if (safeUpdates.vip_device_last_ua !== undefined) payload.vip_device_last_ua = safeUpdates.vip_device_last_ua;
-        if (safeUpdates.vip_device_reset_count !== undefined) payload.vip_device_reset_count = safeUpdates.vip_device_reset_count;
-        if (safeUpdates.vip_device_last_reset_at !== undefined) payload.vip_device_last_reset_at = safeUpdates.vip_device_last_reset_at;
-        if (safeUpdates.vip_device_last_reset_by !== undefined) payload.vip_device_last_reset_by = safeUpdates.vip_device_last_reset_by;
-        if (safeUpdates.vip_sharing_attempt_count !== undefined) payload.vip_sharing_attempt_count = safeUpdates.vip_sharing_attempt_count;
-        if (safeUpdates.vip_last_sharing_attempt_at !== undefined) payload.vip_last_sharing_attempt_at = safeUpdates.vip_last_sharing_attempt_at;
-        if (safeUpdates.last_login_at !== undefined) payload.last_login_at = safeUpdates.last_login_at;
-        if (safeUpdates.referral_code !== undefined) payload.referral_code = safeUpdates.referral_code;
-        if (safeUpdates.referred_by_user_id !== undefined) payload.referred_by_user_id = safeUpdates.referred_by_user_id;
-        if (safeUpdates.referred_by_code !== undefined) payload.referred_by_code = safeUpdates.referred_by_code;
-        if (safeUpdates.referred_at !== undefined) payload.referred_at = safeUpdates.referred_at;
-        if (safeUpdates.bonus_vip_days !== undefined) payload.bonus_vip_days = safeUpdates.bonus_vip_days;
+      const payload: Record<string, unknown> = {};
+      if (safeUpdates.email !== undefined) payload.email = safeUpdates.email.toLowerCase();
+      if (safeUpdates.password_hash !== undefined) payload.password_hash = safeUpdates.password_hash;
+      if (safeUpdates.role !== undefined) payload.role = safeUpdates.role;
+      if (safeUpdates.vip_active !== undefined) payload.vip_active = safeUpdates.vip_active;
+      if (safeUpdates.vip_expires_at !== undefined) payload.vip_expires_at = safeUpdates.vip_expires_at;
+      if (safeUpdates.free_access_expires_at !== undefined) payload.free_access_expires_at = safeUpdates.free_access_expires_at;
+      if (safeUpdates.name !== undefined) payload.name = safeUpdates.name;
+      if (safeUpdates.is_blocked !== undefined) payload.is_blocked = safeUpdates.is_blocked;
+      if (safeUpdates.blocked_at !== undefined) payload.blocked_at = safeUpdates.blocked_at;
+      if (safeUpdates.blocked_reason !== undefined) payload.blocked_reason = safeUpdates.blocked_reason;
+      if (safeUpdates.blocked_by !== undefined) payload.blocked_by = safeUpdates.blocked_by;
+      if (safeUpdates.vip_bound_device_id !== undefined) payload.vip_bound_device_id = safeUpdates.vip_bound_device_id;
+      if (safeUpdates.vip_bound_session_id !== undefined) payload.vip_bound_session_id = safeUpdates.vip_bound_session_id;
+      if (safeUpdates.vip_device_label !== undefined) payload.vip_device_label = safeUpdates.vip_device_label;
+      if (safeUpdates.vip_device_bound_at !== undefined) payload.vip_device_bound_at = safeUpdates.vip_device_bound_at;
+      if (safeUpdates.vip_device_last_seen_at !== undefined) payload.vip_device_last_seen_at = safeUpdates.vip_device_last_seen_at;
+      if (safeUpdates.vip_device_last_ip !== undefined) payload.vip_device_last_ip = safeUpdates.vip_device_last_ip;
+      if (safeUpdates.vip_device_last_ua !== undefined) payload.vip_device_last_ua = safeUpdates.vip_device_last_ua;
+      if (safeUpdates.vip_device_reset_count !== undefined) payload.vip_device_reset_count = safeUpdates.vip_device_reset_count;
+      if (safeUpdates.vip_device_last_reset_at !== undefined) payload.vip_device_last_reset_at = safeUpdates.vip_device_last_reset_at;
+      if (safeUpdates.vip_device_last_reset_by !== undefined) payload.vip_device_last_reset_by = safeUpdates.vip_device_last_reset_by;
+      if (safeUpdates.vip_sharing_attempt_count !== undefined) payload.vip_sharing_attempt_count = safeUpdates.vip_sharing_attempt_count;
+      if (safeUpdates.vip_last_sharing_attempt_at !== undefined) payload.vip_last_sharing_attempt_at = safeUpdates.vip_last_sharing_attempt_at;
+      if (safeUpdates.last_login_at !== undefined) payload.last_login_at = safeUpdates.last_login_at;
+      if (safeUpdates.referral_code !== undefined) payload.referral_code = safeUpdates.referral_code;
+      if (safeUpdates.referred_by_user_id !== undefined) payload.referred_by_user_id = safeUpdates.referred_by_user_id;
+      if (safeUpdates.referred_by_code !== undefined) payload.referred_by_code = safeUpdates.referred_by_code;
+      if (safeUpdates.referred_at !== undefined) payload.referred_at = safeUpdates.referred_at;
+      if (safeUpdates.bonus_vip_days !== undefined) payload.bonus_vip_days = safeUpdates.bonus_vip_days;
+      if (safeUpdates.vip_allowed_platform_ids !== undefined) {
+        payload.vip_allowed_platform_ids = safeUpdates.vip_allowed_platform_ids;
+      }
+      if (safeUpdates.vip_platform_expiries !== undefined) {
+        payload.vip_platform_expiries = safeUpdates.vip_platform_expiries;
+      }
 
-        if (Object.keys(payload).length > 0) {
-          const userEmail = this.db.users[idx].email.toLowerCase();
-          const { error: updateErr } = await this.supabase
-            .from('app_users')
-            .update(payload)
-            .or(`id.eq.${id},email.eq.${userEmail}`);
-          if (updateErr) {
-            // Fallback to core columns if extended device columns are not yet present in external Supabase schema
-            const corePayload: Record<string, unknown> = {};
-            const coreKeys = [
-              'email',
-              'password_hash',
-              'role',
-              'vip_active',
-              'vip_expires_at',
-              'free_access_expires_at',
-              'name',
-              'is_blocked',
-              'blocked_at',
-              'blocked_reason',
-              'blocked_by',
-              'last_login_at',
-            ];
-            for (const k of coreKeys) {
-              if (k in payload) corePayload[k] = payload[k];
-            }
-            if (Object.keys(corePayload).length > 0) {
-              await this.supabase
-                .from('app_users')
-                .update(corePayload)
-                .or(`id.eq.${id},email.eq.${userEmail}`);
+      if (Object.keys(payload).length > 0) {
+        const userEmail = this.db.users[idx].email.toLowerCase();
+        const { error: updateErr } = await this.supabase
+          .from('app_users')
+          .update(payload)
+          .or(`id.eq.${id},email.eq.${userEmail}`);
+        if (updateErr) {
+          const errMsg = String(updateErr.message || '');
+          const isSchemaErr =
+            updateErr.code === 'PGRST204' ||
+            updateErr.code === '42703' ||
+            errMsg.includes('schema cache') ||
+            errMsg.includes('does not exist');
+          if (!isSchemaErr) {
+            this.db.users[idx] = prevUser;
+            this.saveDatabase(this.db);
+            console.error('[STORAGE] Error syncing updateUser to Supabase:', updateErr);
+            throw new Error(`Database persistence failure (app_users): ${updateErr.message}`);
+          }
+          const corePayload: Record<string, unknown> = {};
+          const coreKeys = [
+            'email',
+            'password_hash',
+            'role',
+            'vip_active',
+            'vip_expires_at',
+            'free_access_expires_at',
+            'name',
+            'is_blocked',
+            'blocked_at',
+            'blocked_reason',
+            'blocked_by',
+            'last_login_at',
+          ];
+          for (const k of coreKeys) {
+            if (k in payload) corePayload[k] = payload[k];
+          }
+          if (Object.keys(corePayload).length > 0) {
+            const { error: coreErr } = await this.supabase
+              .from('app_users')
+              .update(corePayload)
+              .or(`id.eq.${id},email.eq.${userEmail}`);
+            if (coreErr) {
+              this.db.users[idx] = prevUser;
+              this.saveDatabase(this.db);
+              console.error('[STORAGE] Error syncing core updateUser to Supabase:', coreErr);
+              throw new Error(`Database persistence failure (app_users): ${coreErr.message}`);
             }
           }
         }
-      } catch (err) {
-        console.error('[STORAGE] Error syncing updateUser to Supabase:', err);
       }
     }
 
@@ -936,11 +1461,14 @@ export class StorageEngine {
       created_at: platform.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    const prevPlatforms = [...this.db.platforms];
     this.db.platforms.push(newPlat);
     this.saveDatabase(this.db);
     if (this.supabase) {
       const { error } = await this.supabase.from('platforms').upsert(newPlat);
       if (error) {
+        this.db.platforms = prevPlatforms;
+        this.saveDatabase(this.db);
         console.error('[STORAGE] Error syncing addPlatform to Supabase:', error);
         throw new Error(`Database persistence failure (platforms): ${error.message}`);
       }
@@ -952,6 +1480,7 @@ export class StorageEngine {
     const uuid = ensureUuid(id);
     const idx = this.db.platforms.findIndex((p) => p.id === id || p.id === uuid);
     if (idx === -1) return undefined;
+    const prevPlat = { ...this.db.platforms[idx] };
     const { id: _ignoreId, created_at: _ignoreCreated, ...safeUpdates } = updates;
     const targetUuid = ensureUuid(this.db.platforms[idx].id);
     const updatedPlat: Platform = {
@@ -965,6 +1494,8 @@ export class StorageEngine {
     if (this.supabase) {
       const { error } = await this.supabase.from('platforms').upsert(updatedPlat);
       if (error) {
+        this.db.platforms[idx] = prevPlat;
+        this.saveDatabase(this.db);
         console.error('[STORAGE] Error syncing updatePlatform to Supabase:', error);
         throw new Error(`Database persistence failure (platforms): ${error.message}`);
       }
@@ -974,6 +1505,7 @@ export class StorageEngine {
 
   public async deletePlatform(id: string): Promise<boolean> {
     const uuid = ensureUuid(id);
+    const prevPlatforms = [...this.db.platforms];
     const before = this.db.platforms.length;
     this.db.platforms = this.db.platforms.filter((p) => p.id !== id && p.id !== uuid);
     if (this.db.platforms.length !== before) {
@@ -984,6 +1516,8 @@ export class StorageEngine {
           ? await this.supabase.from('platforms').delete().eq('id', id)
           : await this.supabase.from('platforms').delete().eq('id', uuid);
         if (error) {
+          this.db.platforms = prevPlatforms;
+          this.saveDatabase(this.db);
           console.error('[STORAGE] Error syncing deletePlatform to Supabase:', error);
           throw new Error(`Database deletion failure (platforms): ${error.message}`);
         }
@@ -1072,6 +1606,7 @@ export class StorageEngine {
     const newPlan: VipPlan = {
       ...plan,
       id: planUuid,
+      plan_scope: plan.plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
       original_price_inr: plan.original_price_inr !== undefined ? Number(plan.original_price_inr) : undefined,
       bonus_days: plan.bonus_days !== undefined ? Math.max(0, Math.round(Number(plan.bonus_days) || 0)) : 0,
       discount_label: plan.discount_label ? String(plan.discount_label).trim() : '',
@@ -1083,8 +1618,8 @@ export class StorageEngine {
     if (this.supabase) {
       const { error } = await this.supabase.from('vip_plans').upsert(newPlan);
       if (error) {
-        // Fallback if remote Supabase table does not yet have original_price_inr / bonus_days / discount_label columns
-        const { original_price_inr: _op, bonus_days: _bd, discount_label: _dl, ...legacyPlan } = newPlan;
+        // Fallback if remote Supabase table does not yet have plan_scope / original_price_inr / bonus_days / discount_label columns
+        const { plan_scope: _ps, original_price_inr: _op, bonus_days: _bd, discount_label: _dl, ...legacyPlan } = newPlan;
         const { error: retryErr } = await this.supabase.from('vip_plans').upsert(legacyPlan);
         if (retryErr) {
           console.error('[STORAGE] Error syncing addVipPlan to Supabase:', retryErr);
@@ -1101,9 +1636,18 @@ export class StorageEngine {
     if (idx === -1) return undefined;
     const { id: _ignoreId, created_at: _ignoreCreated, ...safeUpdates } = updates;
     const targetUuid = ensureUuid(this.db.vip_plans[idx].id);
+    const mergedScope =
+      safeUpdates.plan_scope !== undefined
+        ? safeUpdates.plan_scope === 'single_platform'
+          ? 'single_platform'
+          : 'all_platforms'
+        : this.db.vip_plans[idx].plan_scope === 'single_platform'
+        ? 'single_platform'
+        : 'all_platforms';
     const updatedPlan: VipPlan = {
       ...this.db.vip_plans[idx],
       ...safeUpdates,
+      plan_scope: mergedScope,
       id: targetUuid,
       updated_at: new Date().toISOString(),
     };
@@ -1112,7 +1656,7 @@ export class StorageEngine {
     if (this.supabase) {
       const { error } = await this.supabase.from('vip_plans').upsert(updatedPlan);
       if (error) {
-        const { original_price_inr: _op, bonus_days: _bd, discount_label: _dl, ...legacyPlan } = updatedPlan;
+        const { plan_scope: _ps, original_price_inr: _op, bonus_days: _bd, discount_label: _dl, ...legacyPlan } = updatedPlan;
         const { error: retryErr } = await this.supabase.from('vip_plans').upsert(legacyPlan);
         if (retryErr) {
           console.error('[STORAGE] Error syncing updateVipPlan to Supabase:', retryErr);
@@ -1149,6 +1693,140 @@ export class StorageEngine {
     return this.db.settings;
   }
 
+  public getStorageHealth(): {
+    mode: 'supabase' | 'supabase_cloud_storage' | 'local_json' | 'local_json_fallback';
+    supabaseConfigured: boolean;
+    supabaseSchemaReady: boolean;
+    supabaseSchemaError: string | null;
+    lastUpdatedAt: string;
+  } {
+    const mode = this.supabase
+      ? 'supabase'
+      : this.cloudStorageClient
+      ? 'supabase_cloud_storage'
+      : this.supabaseConfiguredFlag
+      ? 'local_json_fallback'
+      : 'local_json';
+    return {
+      mode,
+      supabaseConfigured: this.supabaseConfiguredFlag || Boolean(this.supabase) || Boolean(this.cloudStorageClient),
+      supabaseSchemaReady: this.supabaseSchemaReady || Boolean(this.cloudStorageClient),
+      supabaseSchemaError: this.cloudStorageClient ? null : this.supabaseSchemaError,
+      lastUpdatedAt: this.lastCloudSyncAt || this.db.settings?.updated_at || new Date().toISOString(),
+    };
+  }
+
+  public async syncAllLocalToSupabase(
+    supabaseUrl: string,
+    supabaseKey: string
+  ): Promise<{
+    synced: boolean;
+    error?: string;
+    counts?: {
+      users: number;
+      platforms: number;
+      vip_plans: number;
+      vip_batches: number;
+      announcements: number;
+      payment_records: number;
+    };
+    storage: ReturnType<StorageEngine['getStorageHealth']>;
+  }> {
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your-project')) {
+      return {
+        synced: true,
+        counts: {
+          users: this.db.users.length,
+          platforms: this.db.platforms.length,
+          vip_plans: this.db.vip_plans.length,
+          vip_batches: this.db.vip_batches.length,
+          announcements: this.db.announcements.length,
+          payment_records: this.db.payment_records.length,
+        },
+        storage: this.getStorageHealth(),
+      };
+    }
+
+    try {
+      const client = createClient(supabaseUrl, supabaseKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const [{ error: settingsProbeErr }, { error: platformsProbeErr }] = await Promise.all([
+        client.from('app_settings').select('id').limit(1),
+        client.from('platforms').select('id').limit(1),
+      ]);
+
+      const probeErr = settingsProbeErr || platformsProbeErr;
+      if (probeErr) {
+        // Automatically sync via private Supabase Cloud Storage bucket without requiring manual SQL
+        const activated = await this.activateAutomaticCloudStorage(client, true);
+        if (activated) {
+          return {
+            synced: true,
+            counts: {
+              users: this.db.users.length,
+              platforms: this.db.platforms.length,
+              vip_plans: this.db.vip_plans.length,
+              vip_batches: this.db.vip_batches.length,
+              announcements: this.db.announcements.length,
+              payment_records: this.db.payment_records.length,
+            },
+            storage: this.getStorageHealth(),
+          };
+        }
+        return {
+          synced: false,
+          error: 'Automatic cloud sync temporarily unavailable. Local persistent storage remains active.',
+          storage: this.getStorageHealth(),
+        };
+      }
+
+      // Activate Supabase client permanently for all subsequent writes
+      this.supabase = client;
+      this.supabaseConfiguredFlag = true;
+      this.supabaseSchemaReady = true;
+      this.supabaseSchemaError = null;
+
+      // Push settings first
+      await this.syncSettingsToSupabase(client);
+
+      // Push users, platforms, plans, batches, announcements, payments
+      const upsertQuietly = async (table: string, rows: Record<string, any>[]) => {
+        let count = 0;
+        for (const row of rows) {
+          const { error } = await client.from(table).upsert(row);
+          if (!error) count++;
+        }
+        return count;
+      };
+
+      const counts = {
+        users: await upsertQuietly('app_users', this.db.users as any[]),
+        platforms: await upsertQuietly('platforms', this.db.platforms as any[]),
+        vip_plans: await upsertQuietly('vip_plans', this.db.vip_plans as any[]),
+        vip_batches: await upsertQuietly('vip_batches', this.db.vip_batches as any[]),
+        announcements: await upsertQuietly('announcements', this.db.announcements as any[]),
+        payment_records: await upsertQuietly('payment_records', this.db.payment_records as any[]),
+      };
+
+      this.saveDatabase(this.db);
+
+      return {
+        synced: true,
+        counts,
+        storage: this.getStorageHealth(),
+      };
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : 'Failed to verify and sync Supabase cloud database.';
+      return {
+        synced: false,
+        error: msg,
+        storage: this.getStorageHealth(),
+      };
+    }
+  }
+
   public async syncSettingsToSupabase(customClient?: any): Promise<void> {
     const client = customClient || this.supabase;
     if (!client) return;
@@ -1167,13 +1845,23 @@ export class StorageEngine {
       'festival_version',
       'vip_grace_period_hours',
       'referral_reward_days',
+      'home_single_vip_label',
+      'home_single_vip_price',
+      'home_single_vip_duration_days',
+      'home_single_vip_destination',
+      'home_single_vip_url',
+      'home_all_vip_label',
+      'home_all_vip_price',
+      'home_all_vip_duration_days',
+      'home_all_vip_destination',
+      'home_all_vip_url',
     ];
 
     let strippedAnyExtended = false;
     let lastError: any = null;
     const workingPayload: Record<string, any> = { ...fullPayload };
 
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 25; attempt++) {
       const { error } = await client.from('app_settings').upsert(workingPayload);
       if (!error) {
         lastError = null;
@@ -1223,11 +1911,12 @@ export class StorageEngine {
       throw new Error(`Database persistence failure (settings): ${lastError.message}`);
     }
 
-    // Always persist extended settings (referral_discount_config, referral_program_enabled, grace/reward days)
-    // in key_records (SETTINGS_EXT_STATE:) and referral_discount_config table if available so they survive
-    // server restarts and re-logins even before app_settings columns are migrated in Supabase.
+    // Persist complete non-festival settings snapshot in SETTINGS_EXT_STATE so zero settings
+    // are ever dropped if external Supabase schema is missing optional columns prior to migration.
     try {
+      const { festival_configs_json: _omitFest, ...nonFestivalSettings } = this.db.settings as unknown as Record<string, unknown>;
       const extSnapshot = JSON.stringify({
+        ...nonFestivalSettings,
         referral_program_enabled: this.db.settings.referral_program_enabled !== false,
         referral_discount_config: this.getReferralDiscountConfig(),
         vip_grace_period_hours: this.db.settings.vip_grace_period_hours ?? 24,
@@ -1237,7 +1926,7 @@ export class StorageEngine {
       await client.from('key_records').upsert({
         id: '00000000-0000-4000-8000-00000000cf99',
         user_id: '27f86505-bb19-465f-9597-aecf7ec7ee85',
-        user_email: 'system@studyfox.app',
+        user_email: 'system@studyblunder.app',
         token: `SETTINGS_EXT_STATE:${extSnapshot}`,
         shortener_url: 'settings_ext_state',
         status: 'expired',
@@ -1273,6 +1962,7 @@ export class StorageEngine {
   }
 
   public async updateSettings(updates: Partial<AppSettings>): Promise<AppSettings> {
+    const prevSettings = { ...this.db.settings };
     const cleanUpdates = Object.fromEntries(
       Object.entries(updates || {}).filter(([, v]) => v !== undefined)
     ) as Partial<AppSettings>;
@@ -1295,12 +1985,18 @@ export class StorageEngine {
       ...cleanUpdates,
       referral_program_enabled: preservedReferralProgramEnabled,
       referral_discount_config: preservedDiscountConfig,
-      app_name: (cleanUpdates.app_name !== undefined ? cleanUpdates.app_name : this.db.settings.app_name) || 'STUDY FOX',
+      app_name: (cleanUpdates.app_name !== undefined ? cleanUpdates.app_name : this.db.settings.app_name) || 'STUDY BLUNDER',
       updated_at: new Date().toISOString(),
     };
     this.saveDatabase(this.db);
     if (this.supabase) {
-      await this.syncSettingsToSupabase();
+      try {
+        await this.syncSettingsToSupabase();
+      } catch (err) {
+        this.db.settings = prevSettings;
+        this.saveDatabase(this.db);
+        throw err;
+      }
     }
     return this.db.settings;
   }
@@ -1556,6 +2252,9 @@ export class StorageEngine {
           request_id: newRecord.request_id,
           purchase_source: newRecord.purchase_source,
           bonus_days_applied: newRecord.bonus_days_applied || 0,
+          vip_scope: newRecord.vip_scope || 'all_platforms',
+          selected_platform_id: newRecord.selected_platform_id || null,
+          selected_platform_name: newRecord.selected_platform_name || null,
         });
         if (error) {
           const { error: retryErr } = await this.supabase.from('payment_records').upsert(legacyPayload);
@@ -1592,6 +2291,9 @@ export class StorageEngine {
             purchase_source: _ps,
             bonus_days_applied: _bda,
             rejection_reason: _rr,
+            vip_scope: _vs,
+            selected_platform_id: _spid,
+            selected_platform_name: _spn,
             ...legacyUpdates
           } = safeUpdates;
           const { error: retryErr } = await this.supabase.from('payment_records').update(legacyUpdates).eq('id', targetId);
@@ -3806,6 +4508,37 @@ export class StorageEngine {
         this.supabase.from('vip_device_logs').select('*').order('timestamp', { ascending: false }).limit(500),
       ]);
 
+      // Detect uninitialized Supabase project (missing core tables such as PGRST205 / 42P01)
+      const isMissingTableErr = (err: { code?: string; message?: string } | null | undefined) => {
+        if (!err) return false;
+        const msg = String(err.message || '');
+        return (
+          err.code === 'PGRST205' ||
+          err.code === '42P01' ||
+          msg.includes('Could not find the table') ||
+          msg.includes('does not exist')
+        );
+      };
+
+      if (isMissingTableErr(usersErr) || isMissingTableErr(settingsErr)) {
+        const cloudClient =
+          this.supabase ||
+          createClient(supabaseUrl, supabaseKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+        const cloudActivated = await this.activateAutomaticCloudStorage(cloudClient, false);
+        if (!cloudActivated) {
+          this.supabase = null;
+          this.supabaseSchemaReady = true;
+          this.supabaseSchemaError = null;
+          console.warn('[STORAGE] Continuing with persistent local JSON + backup storage (data/database.json).');
+        }
+        return;
+      }
+
+      this.supabaseSchemaReady = true;
+      this.supabaseSchemaError = null;
+
       // 1. Rehydrate app_users
       if (!usersErr && remoteUsers && remoteUsers.length > 0) {
         const localByEmail = new Map<string, User>();
@@ -3834,6 +4567,13 @@ export class StorageEngine {
             role: email === 'bhaskardattmishra0101@gmail.com' ? 'super_admin' : (u.role || localMatch?.role || 'user'),
             vip_active: email === 'bhaskardattmishra0101@gmail.com' ? true : Boolean(u.vip_active),
             vip_expires_at: u.vip_expires_at || null,
+            vip_allowed_platform_ids: Array.isArray(u.vip_allowed_platform_ids)
+              ? u.vip_allowed_platform_ids
+              : localMatch?.vip_allowed_platform_ids || [],
+            vip_platform_expiries:
+              u.vip_platform_expiries && typeof u.vip_platform_expiries === 'object'
+                ? u.vip_platform_expiries
+                : localMatch?.vip_platform_expiries || {},
             free_access_expires_at: u.free_access_expires_at || null,
             is_blocked: Boolean(u.is_blocked),
             blocked_at: u.blocked_at || null,
@@ -3906,34 +4646,67 @@ export class StorageEngine {
           app_name:
             remoteSettings.app_name && remoteSettings.app_name !== 'Education Platform'
               ? remoteSettings.app_name
-              : this.db.settings.app_name || 'STUDY FOX',
+              : this.db.settings.app_name || 'STUDY BLUNDER',
           updated_at: remoteSettings.updated_at || this.db.settings.updated_at,
         };
       }
 
-      // 3. Rehydrate platforms if available
+      // 3. Rehydrate platforms if available (NEVER wipe local admin-added platforms if Supabase table was freshly created & empty)
       if (!platErr && Array.isArray(remotePlatforms)) {
-        this.db.platforms = remotePlatforms;
+        if (remotePlatforms.length > 0) {
+          this.db.platforms = remotePlatforms;
+        } else if (this.db.platforms.length > 0) {
+          for (const lp of this.db.platforms) {
+            await this.supabase.from('platforms').upsert(lp).then(() => {});
+          }
+        }
       }
 
-      // 4. Rehydrate VIP plans if available
+      // 4. Rehydrate VIP plans if available (preserve & push local plans if remote table is newly created & empty)
       if (!plansErr && Array.isArray(remotePlans)) {
-        this.db.vip_plans = remotePlans;
+        if (remotePlans.length > 0) {
+          this.db.vip_plans = remotePlans.map((pl: VipPlan) => ({
+            ...pl,
+            plan_scope: pl.plan_scope === 'single_platform' ? 'single_platform' : 'all_platforms',
+          }));
+        } else if (this.db.vip_plans.length > 0) {
+          for (const lpl of this.db.vip_plans) {
+            await this.supabase.from('vip_plans').upsert(lpl).then(() => {});
+          }
+        }
       }
 
       // 5. Rehydrate VIP batches if available
       if (!batchesErr && Array.isArray(remoteBatches)) {
-        this.db.vip_batches = remoteBatches;
+        if (remoteBatches.length > 0) {
+          this.db.vip_batches = remoteBatches;
+        } else if (this.db.vip_batches.length > 0) {
+          for (const lb of this.db.vip_batches) {
+            await this.supabase.from('vip_batches').upsert(lb).then(() => {});
+          }
+        }
       }
 
       // 6. Rehydrate announcements if available
       if (!annErr && Array.isArray(remoteAnnouncements)) {
-        this.db.announcements = remoteAnnouncements;
+        if (remoteAnnouncements.length > 0) {
+          this.db.announcements = remoteAnnouncements;
+        } else if (this.db.announcements.length > 0) {
+          for (const la of this.db.announcements) {
+            await this.supabase.from('announcements').upsert(la).then(() => {});
+          }
+        }
       }
 
       // 7. Rehydrate payment_records if available
-      if (!payErr && remotePayments) {
-        this.db.payment_records = remotePayments;
+      if (!payErr && Array.isArray(remotePayments)) {
+        if (remotePayments.length > 0) {
+          this.db.payment_records = remotePayments;
+        } else if (this.db.payment_records.length > 0) {
+          for (const lpay of this.db.payment_records) {
+            await this.supabase.from('payment_records').upsert(lpay).then(() => {});
+          }
+        }
       }
 
       // 8. Rehydrate key_records if available (extracting FLOW:, PLATLOG:, FESTIVAL_STATE:, FEEDBACK_ITEM:, PW_RESET:)
@@ -4003,6 +4776,15 @@ export class StorageEngine {
             try {
               const parsedExtState = JSON.parse(rawToken.slice('SETTINGS_EXT_STATE:'.length));
               if (parsedExtState && typeof parsedExtState === 'object') {
+                const extTs = parsedExtState.updated_at ? new Date(parsedExtState.updated_at).getTime() : 0;
+                const curTs = this.db.settings.updated_at ? new Date(this.db.settings.updated_at).getTime() : 0;
+                const { festival_configs_json: _omitFest, id: _omitId, ...safeExt } = parsedExtState as Record<string, unknown>;
+                if (extTs >= curTs) {
+                  this.db.settings = {
+                    ...this.db.settings,
+                    ...(safeExt as Partial<AppSettings>),
+                  };
+                }
                 if (typeof parsedExtState.referral_program_enabled === 'boolean') {
                   this.db.settings.referral_program_enabled = parsedExtState.referral_program_enabled;
                 }
@@ -8356,6 +9138,512 @@ export class StorageEngine {
         opened_at: l.opened_at,
       };
     });
+  }
+
+  // ==========================================================
+  // STUDENT GROWTH FEATURES:
+  // 1. Exam Timer
+  // 2. Offer Board (Photo Banners)
+  // 3. 30-Day Daily Motivation
+  // 4. Daily Login XP + Top 10 Leaderboard
+  // 5. Study Session Logs + Sunday Parents Report Card
+  // ==========================================================
+
+  private getIstWeekRange(nowDate = new Date()): {
+    todayIst: string;
+    weekStartIst: string;
+    weekEndIst: string;
+    isSundayIst: boolean;
+    nextSundayIst: string;
+    weekKey: string;
+  } {
+    const todayIst = formatDateInTimezone(nowDate, DEFAULT_APP_TIMEZONE);
+    const [y, m, d] = todayIst.split('-').map((n) => parseInt(n, 10));
+    const utcDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+    const isSundayIst = utcDay === 0;
+    // Week window: Monday .. Sunday containing todayIst
+    const daysSinceMonday = utcDay === 0 ? 6 : utcDay - 1;
+    const weekStartIst = shiftCalendarDate(todayIst, -daysSinceMonday);
+    const weekEndIst = shiftCalendarDate(weekStartIst, 6);
+    const nextSundayIst = isSundayIst ? todayIst : weekEndIst;
+    return {
+      todayIst,
+      weekStartIst,
+      weekEndIst,
+      isSundayIst,
+      nextSundayIst,
+      weekKey: weekStartIst,
+    };
+  }
+
+  // --- 1. Student Personal Exam Timer ---
+  public getStudentExamTimer(userId: string): StudentExamTimer | null {
+    if (!this.db.student_exam_timers || typeof this.db.student_exam_timers !== 'object') {
+      this.db.student_exam_timers = {};
+    }
+    return this.db.student_exam_timers[userId] || null;
+  }
+
+  public setStudentExamTimer(userId: string, examName: string, examDatetime: string): StudentExamTimer {
+    if (!this.db.student_exam_timers || typeof this.db.student_exam_timers !== 'object') {
+      this.db.student_exam_timers = {};
+    }
+    const cleanName = String(examName || '').trim().slice(0, 80);
+    const parsedDate = new Date(examDatetime);
+    if (!cleanName) {
+      throw new Error('Please enter your Exam or Paper name.');
+    }
+    if (isNaN(parsedDate.getTime())) {
+      throw new Error('Please choose a valid Exam date and time.');
+    }
+    const record: StudentExamTimer = {
+      user_id: userId,
+      exam_name: cleanName,
+      exam_datetime: parsedDate.toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.db.student_exam_timers[userId] = record;
+    this.saveDatabase(this.db);
+    return record;
+  }
+
+  // --- 2. Offer Board (Admin Uploaded Photo Banners) ---
+  public getOfferBoard(onlyActive = false): OfferBoardItem[] {
+    const list = Array.isArray(this.db.offer_board) ? this.db.offer_board : [];
+    const filtered = onlyActive ? list.filter((item) => item && item.is_active) : list;
+    return [...filtered].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  }
+
+  public saveOfferBoard(items: Partial<OfferBoardItem>[]): OfferBoardItem[] {
+    const now = new Date().toISOString();
+    const normalized: OfferBoardItem[] = (Array.isArray(items) ? items : [])
+      .map((item, idx) => ({
+        id: item.id && String(item.id).trim() ? String(item.id).trim() : crypto.randomUUID(),
+        title: String(item.title || '').trim().slice(0, 120) || 'Special Offer',
+        subtitle: String(item.subtitle || '').trim().slice(0, 240),
+        image_url: String(item.image_url || '').trim(),
+        link_url: String(item.link_url || '').trim(),
+        is_active: item.is_active !== false,
+        display_order: typeof item.display_order === 'number' ? item.display_order : idx + 1,
+        created_at: item.created_at || now,
+        updated_at: now,
+      }))
+      .filter((item) => Boolean(item.image_url || item.title));
+
+    this.db.offer_board = normalized;
+    this.saveDatabase(this.db);
+    return normalized;
+  }
+
+  // --- 3. 30-Day Daily Motivation ---
+  public getDailyMotivations(): DailyMotivationItem[] {
+    const defaults = getDefault30DayMotivations();
+    const stored = Array.isArray(this.db.daily_motivations) ? this.db.daily_motivations : [];
+    const byDay = new Map<number, DailyMotivationItem>();
+    for (const d of defaults) {
+      byDay.set(d.day_number, d);
+    }
+    for (const s of stored) {
+      const dayNum = Number(s?.day_number);
+      if (dayNum >= 1 && dayNum <= 30) {
+        byDay.set(dayNum, {
+          day_number: dayNum,
+          quote: String(s.quote || '').trim() || byDay.get(dayNum)?.quote || '',
+          author: String(s.author || '').trim(),
+          image_url: String(s.image_url || '').trim(),
+          updated_at: s.updated_at || new Date().toISOString(),
+        });
+      }
+    }
+    return Array.from({ length: 30 }, (_, idx) => byDay.get(idx + 1)!);
+  }
+
+  public saveDailyMotivations(items: Partial<DailyMotivationItem>[]): DailyMotivationItem[] {
+    const existing = this.getDailyMotivations();
+    const byDay = new Map<number, DailyMotivationItem>(existing.map((m) => [m.day_number, m]));
+    const now = new Date().toISOString();
+
+    for (const raw of Array.isArray(items) ? items : []) {
+      const dayNum = Math.floor(Number(raw?.day_number));
+      if (dayNum >= 1 && dayNum <= 30) {
+        const prev = byDay.get(dayNum)!;
+        byDay.set(dayNum, {
+          day_number: dayNum,
+          quote: raw.quote !== undefined ? String(raw.quote).trim() : prev.quote,
+          author: raw.author !== undefined ? String(raw.author).trim() : prev.author || '',
+          image_url: raw.image_url !== undefined ? String(raw.image_url).trim() : prev.image_url || '',
+          updated_at: now,
+        });
+      }
+    }
+
+    const result = Array.from({ length: 30 }, (_, idx) => byDay.get(idx + 1)!);
+    this.db.daily_motivations = result;
+    this.saveDatabase(this.db);
+    return result;
+  }
+
+  public getTodayDailyMotivation(): { item: DailyMotivationItem; today_ist: string; day_number: number } {
+    const todayIst = formatDateInTimezone(new Date(), DEFAULT_APP_TIMEZONE);
+    const [y, m, d] = todayIst.split('-').map((n) => parseInt(n, 10));
+    const daysSinceEpoch = Math.floor(Date.UTC(y, m - 1, d) / (24 * 60 * 60 * 1000));
+    const dayNumber = (((daysSinceEpoch % 30) + 30) % 30) + 1; // 1..30 rotating daily at IST midnight
+    const list = this.getDailyMotivations();
+    const item = list[dayNumber - 1] || list[0];
+    return {
+      item,
+      today_ist: todayIst,
+      day_number: dayNumber,
+    };
+  }
+
+  // --- 4. Daily Login XP System + Top 10 Leaderboard ---
+  private ensureXpRecord(userId: string): StudentXpRecord {
+    if (!this.db.student_xp || typeof this.db.student_xp !== 'object') {
+      this.db.student_xp = {};
+    }
+    const { weekKey } = this.getIstWeekRange();
+    const existing = this.db.student_xp[userId];
+    if (existing) {
+      if (existing.weekly_key !== weekKey) {
+        existing.weekly_xp = 0;
+        existing.weekly_key = weekKey;
+      }
+      return existing;
+    }
+    const created: StudentXpRecord = {
+      user_id: userId,
+      xp_total: 0,
+      weekly_xp: 0,
+      weekly_key: weekKey,
+      daily_streak: 0,
+      last_login_date: null,
+      total_login_days: 0,
+      updated_at: new Date().toISOString(),
+    };
+    this.db.student_xp[userId] = created;
+    return created;
+  }
+
+  public awardDailyLoginXp(userId: string): {
+    awarded: boolean;
+    xp_awarded: number;
+    record: StudentXpRecord;
+  } {
+    const user = this.getUserById(userId);
+    if (!user) {
+      return {
+        awarded: false,
+        xp_awarded: 0,
+        record: {
+          user_id: userId,
+          xp_total: 0,
+          weekly_xp: 0,
+          weekly_key: this.getIstWeekRange().weekKey,
+          daily_streak: 0,
+          last_login_date: null,
+          total_login_days: 0,
+          updated_at: new Date().toISOString(),
+        },
+      };
+    }
+
+    const { todayIst, weekKey } = this.getIstWeekRange();
+    const rec = this.ensureXpRecord(userId);
+    if (rec.last_login_date === todayIst) {
+      return { awarded: false, xp_awarded: 0, record: rec };
+    }
+
+    const yesterdayIst = shiftCalendarDate(todayIst, -1);
+    const isConsecutive = rec.last_login_date === yesterdayIst;
+    const nextStreak = isConsecutive ? rec.daily_streak + 1 : 1;
+    const baseXp = 50;
+    const streakBonus = Math.min(nextStreak - 1, 7) * 10; // up to +70 bonus XP for 7+ day streak
+    const earned = baseXp + streakBonus;
+
+    rec.xp_total += earned;
+    rec.weekly_xp = (rec.weekly_key === weekKey ? rec.weekly_xp : 0) + earned;
+    rec.weekly_key = weekKey;
+    rec.daily_streak = nextStreak;
+    rec.last_login_date = todayIst;
+    rec.total_login_days += 1;
+    rec.updated_at = new Date().toISOString();
+
+    this.db.student_xp![userId] = rec;
+    this.saveDatabase(this.db);
+    return { awarded: true, xp_awarded: earned, record: rec };
+  }
+
+  public awardBonusXp(userId: string, points: number): StudentXpRecord {
+    const safePoints = Math.max(0, Math.min(500, Math.round(points)));
+    const { weekKey } = this.getIstWeekRange();
+    const rec = this.ensureXpRecord(userId);
+    if (safePoints > 0) {
+      rec.xp_total += safePoints;
+      rec.weekly_xp = (rec.weekly_key === weekKey ? rec.weekly_xp : 0) + safePoints;
+      rec.weekly_key = weekKey;
+      rec.updated_at = new Date().toISOString();
+      this.db.student_xp![userId] = rec;
+      this.saveDatabase(this.db);
+    }
+    return rec;
+  }
+
+  private getSafeStudentDisplayName(user: User): string {
+    const cleanName = String(user.name || '').trim();
+    if (cleanName) return cleanName;
+    const emailPrefix = String(user.email || '').split('@')[0] || 'Student';
+    const prettified = emailPrefix
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!prettified) return 'Student';
+    return prettified
+      .split(' ')
+      .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : ''))
+      .join(' ')
+      .slice(0, 26);
+  }
+
+  public getXpLeaderboard(currentUserId?: string): LeaderboardResponse {
+    const { todayIst } = this.getIstWeekRange();
+    let awardedNow = 0;
+    if (currentUserId) {
+      const awardRes = this.awardDailyLoginXp(currentUserId);
+      if (awardRes.awarded) awardedNow = awardRes.xp_awarded;
+    }
+
+    const xpMap = this.db.student_xp && typeof this.db.student_xp === 'object' ? this.db.student_xp : {};
+    const validUsers = (this.db.users || []).filter((u) => !u.is_blocked);
+
+    const rankedAll: LeaderboardEntry[] = validUsers
+      .map((u) => {
+        const rec = xpMap[u.id];
+        const xpTotal = rec ? Number(rec.xp_total || 0) : 0;
+        const streak = rec ? Number(rec.daily_streak || 0) : 0;
+        const loginDays = rec ? Number(rec.total_login_days || 0) : 0;
+        const vipValid =
+          Boolean(u.vip_active) &&
+          (!u.vip_expires_at || new Date(u.vip_expires_at).getTime() > Date.now());
+        return {
+          rank: 0,
+          user_id: u.id,
+          display_name: this.getSafeStudentDisplayName(u),
+          xp_total: xpTotal,
+          daily_streak: streak,
+          total_login_days: loginDays,
+          is_vip: vipValid,
+          is_me: currentUserId ? u.id === currentUserId : false,
+        };
+      })
+      .filter((entry) => entry.xp_total > 0 || entry.is_me)
+      .sort((a, b) => {
+        if (b.xp_total !== a.xp_total) return b.xp_total - a.xp_total;
+        if (b.daily_streak !== a.daily_streak) return b.daily_streak - a.daily_streak;
+        return a.display_name.localeCompare(b.display_name);
+      });
+
+    rankedAll.forEach((entry, index) => {
+      entry.rank = index + 1;
+    });
+
+    const myEntry = currentUserId ? rankedAll.find((e) => e.user_id === currentUserId) || null : null;
+    const myRec = currentUserId ? xpMap[currentUserId] : undefined;
+
+    return {
+      top_students: rankedAll.slice(0, 10),
+      my_rank: myEntry ? myEntry.rank : null,
+      my_xp: myRec ? Number(myRec.xp_total || 0) : 0,
+      my_streak: myRec ? Number(myRec.daily_streak || 0) : 0,
+      daily_xp_claimed_today: Boolean(myRec && myRec.last_login_date === todayIst),
+      daily_xp_awarded_now: awardedNow > 0 ? awardedNow : undefined,
+      total_ranked_students: rankedAll.length,
+      today_ist: todayIst,
+    };
+  }
+
+  // --- 5. Study Session Logging & Sunday Parents Report Card ---
+  public logStudyMinutes(
+    userId: string,
+    minutes: number,
+    source: 'timer' | 'manual' | 'platform' = 'manual',
+    note = ''
+  ): { log: StudentStudyLog; xp_earned: number } {
+    const cleanMinutes = Math.max(1, Math.min(720, Math.round(Number(minutes) || 0)));
+    const nowIso = new Date().toISOString();
+    const todayIst = formatDateInTimezone(nowIso, DEFAULT_APP_TIMEZONE);
+    if (!Array.isArray(this.db.student_study_logs)) {
+      this.db.student_study_logs = [];
+    }
+    const log: StudentStudyLog = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      minutes: cleanMinutes,
+      source,
+      note: String(note || '').trim().slice(0, 140),
+      logged_at: nowIso,
+      date_ist: todayIst,
+    };
+    this.db.student_study_logs.unshift(log);
+    if (this.db.student_study_logs.length > 5000) {
+      this.db.student_study_logs = this.db.student_study_logs.slice(0, 5000);
+    }
+    const xpEarned = Math.min(120, Math.max(5, Math.round(cleanMinutes * 1.5)));
+    this.awardBonusXp(userId, xpEarned);
+    this.saveDatabase(this.db);
+    return { log, xp_earned: xpEarned };
+  }
+
+  public saveParentReportSettings(
+    userId: string,
+    updates: {
+      parent_name?: string;
+      parent_whatsapp?: string;
+      parent_email?: string;
+      auto_sunday_enabled?: boolean;
+    }
+  ): ParentReportSettings {
+    if (!this.db.parent_report_settings || typeof this.db.parent_report_settings !== 'object') {
+      this.db.parent_report_settings = {};
+    }
+    const prev = this.db.parent_report_settings[userId] || {
+      user_id: userId,
+      parent_name: '',
+      parent_whatsapp: '',
+      parent_email: '',
+      auto_sunday_enabled: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const next: ParentReportSettings = {
+      user_id: userId,
+      parent_name:
+        updates.parent_name !== undefined ? String(updates.parent_name).trim().slice(0, 80) : prev.parent_name,
+      parent_whatsapp:
+        updates.parent_whatsapp !== undefined
+          ? String(updates.parent_whatsapp).replace(/[^\d+]/g, '').slice(0, 18)
+          : prev.parent_whatsapp,
+      parent_email:
+        updates.parent_email !== undefined ? String(updates.parent_email).trim().slice(0, 120) : prev.parent_email || '',
+      auto_sunday_enabled:
+        updates.auto_sunday_enabled !== undefined ? Boolean(updates.auto_sunday_enabled) : prev.auto_sunday_enabled,
+      updated_at: new Date().toISOString(),
+    };
+    this.db.parent_report_settings[userId] = next;
+    this.saveDatabase(this.db);
+    return next;
+  }
+
+  public getParentsReportCard(userId: string): ParentsReportCardData {
+    const user = this.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const { weekStartIst, weekEndIst, isSundayIst, nextSundayIst } = this.getIstWeekRange();
+    const leaderboard = this.getXpLeaderboard(userId);
+    const xpRec = this.ensureXpRecord(userId);
+
+    // 1. Weekly Study Hours (from real student_study_logs + platform study activity fallback)
+    const allUserLogs = (this.db.student_study_logs || []).filter((l) => l.user_id === userId);
+    const weekLogs = allUserLogs.filter((l) => l.date_ist >= weekStartIst && l.date_ist <= weekEndIst);
+    const loggedMinutes = weekLogs.reduce((sum, l) => sum + Number(l.minutes || 0), 0);
+
+    // Count platform study sessions this week (each unique platform open adds 15 min if not manually logged)
+    const weekPlatformOpens = (this.db.platform_usage_logs || []).filter((l) => {
+      if (l.user_id !== userId) return false;
+      const dIst = formatDateInTimezone(l.opened_at, DEFAULT_APP_TIMEZONE);
+      return dIst >= weekStartIst && dIst <= weekEndIst;
+    }).length;
+    const totalMinutes = loggedMinutes + (loggedMinutes === 0 ? weekPlatformOpens * 15 : 0);
+    const studyHoursWeek = Math.round((totalMinutes / 60) * 10) / 10;
+
+    // 2. Weekly Quizzes Taken & Marks (from real vip_mock_test_attempts)
+    const weekAttempts = (this.db.vip_mock_test_attempts || []).filter((att) => {
+      if (att.user_id !== userId) return false;
+      const dIst = formatDateInTimezone(att.completed_at, DEFAULT_APP_TIMEZONE);
+      return dIst >= weekStartIst && dIst <= weekEndIst;
+    });
+    const quizzesTakenWeek = weekAttempts.length;
+    const quizMarksObtained = weekAttempts.reduce((sum, a) => sum + Number(a.score || 0), 0);
+    const quizTotalMarks = weekAttempts.reduce((sum, a) => sum + Number(a.total_questions || 0), 0);
+    const quizAvgPercentage =
+      quizTotalMarks > 0
+        ? Math.round((quizMarksObtained / quizTotalMarks) * 100)
+        : quizzesTakenWeek > 0
+        ? Math.round(weekAttempts.reduce((s, a) => s + Number(a.percentage || 0), 0) / quizzesTakenWeek)
+        : 0;
+
+    // 3. Parent Settings
+    const parentSettings: ParentReportSettings =
+      (this.db.parent_report_settings && this.db.parent_report_settings[userId]) || {
+        user_id: userId,
+        parent_name: '',
+        parent_whatsapp: '',
+        parent_email: '',
+        auto_sunday_enabled: true,
+        updated_at: new Date().toISOString(),
+      };
+
+    const studentName = this.getSafeStudentDisplayName(user);
+    const rankLabel = leaderboard.my_rank
+      ? `#${leaderboard.my_rank} / ${leaderboard.total_ranked_students}`
+      : 'Unranked';
+    const hrs = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    const padhaiFormatted = hrs > 0 ? `${hrs} Ghante ${mins} Min` : `${mins} Min`;
+    const quizFormatted =
+      quizzesTakenWeek > 0
+        ? `${quizzesTakenWeek} Quiz (${quizMarksObtained}/${quizTotalMarks} Marks • ${quizAvgPercentage}%)`
+        : '0 Quiz attempted this week';
+
+    const greeting = parentSettings.parent_name
+      ? `Namaste ${parentSettings.parent_name} Ji,`
+      : 'Namaste Parents,';
+
+    const shareText = [
+      `📊 *STUDY BLUNDER — Sunday Parents Report Card*`,
+      `${greeting}`,
+      ``,
+      `👨‍🎓 *Student:* ${studentName}`,
+      `📅 *Week:* ${weekStartIst} to ${weekEndIst}`,
+      ``,
+      `⏱️ *Padhai (Study Time):* ${padhaiFormatted}`,
+      `📝 *Quiz Performance:* ${quizFormatted}`,
+      `🏆 *Leaderboard Rank:* ${rankLabel} (${xpRec.xp_total} Total XP • ${xpRec.daily_streak} Day Streak)`,
+      ``,
+      `— Sent via STUDY BLUNDER Student App`,
+    ].join('\n');
+
+    const digitsOnly = parentSettings.parent_whatsapp.replace(/[^\d]/g, '');
+    const waPhone = digitsOnly.length === 10 ? `91${digitsOnly}` : digitsOnly;
+    const whatsappUrl = waPhone
+      ? `https://wa.me/${waPhone}?text=${encodeURIComponent(shareText)}`
+      : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+    return {
+      student_name: studentName,
+      student_email: user.email,
+      week_start_ist: weekStartIst,
+      week_end_ist: weekEndIst,
+      is_sunday_ist: isSundayIst,
+      next_sunday_ist: nextSundayIst,
+      study_minutes_week: totalMinutes,
+      study_hours_week: studyHoursWeek,
+      study_sessions_count: weekLogs.length + (loggedMinutes === 0 ? weekPlatformOpens : 0),
+      quizzes_taken_week: quizzesTakenWeek,
+      quiz_marks_obtained: quizMarksObtained,
+      quiz_total_marks: quizTotalMarks,
+      quiz_avg_percentage: quizAvgPercentage,
+      leaderboard_rank: leaderboard.my_rank,
+      total_ranked_students: leaderboard.total_ranked_students,
+      total_xp: xpRec.xp_total,
+      weekly_xp: xpRec.weekly_xp,
+      daily_streak: xpRec.daily_streak,
+      parent_settings: parentSettings,
+      recent_study_logs: weekLogs.slice(0, 10),
+      share_text: shareText,
+      whatsapp_url: whatsappUrl,
+    };
   }
 }
 

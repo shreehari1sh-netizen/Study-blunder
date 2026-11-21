@@ -48,6 +48,12 @@ import type {
   ReferrerSalesSummaryReport,
   ReferralPricePreview,
   AdminReferralManagementResponse,
+  StudentExamTimer,
+  OfferBoardItem,
+  DailyMotivationItem,
+  LeaderboardResponse,
+  StudentStudyLog,
+  ParentsReportCardData,
 } from './types.ts';
 
 const TOKEN_KEY = 'edu_portal_token';
@@ -169,6 +175,8 @@ function getAuthHeaders(): HeadersInit {
   const token = getStoredToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
     'X-Device-Id': getOrCreateDeviceId(),
     'X-Device-Label': getClientDeviceLabel(),
   };
@@ -179,15 +187,19 @@ function getAuthHeaders(): HeadersInit {
 }
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit, retries = 3): Promise<Response> {
+  const requestInit: RequestInit = {
+    cache: 'no-store',
+    ...init,
+  };
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      return await fetch(input, init);
+      return await fetch(input, requestInit);
     } catch (err) {
       if (attempt === retries) throw err;
       await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
     }
   }
-  return fetch(input, init);
+  return fetch(input, requestInit);
 }
 
 export const api = {
@@ -323,6 +335,9 @@ export const api = {
     screenshot_data_url: string;
     screenshot_mime_type?: string;
     purchase_source?: 'pre_key' | 'in_app';
+    vip_scope?: 'all_platforms' | 'single_platform';
+    selected_platform_id?: string | null;
+    selected_platform_name?: string | null;
   }): Promise<{ success: boolean; payment: PaymentRecord; message: string }> {
     const res = await apiFetch('/api/vip/payment-claims', {
       method: 'POST',
@@ -1947,6 +1962,213 @@ export const api = {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Failed to cleanup confirmed test accounts');
+    return data;
+  },
+
+  async getAdminStorageStatus(): Promise<{
+    storage: {
+      mode: 'supabase' | 'supabase_cloud_storage' | 'local_json' | 'local_json_fallback';
+      supabaseConfigured: boolean;
+      supabaseSchemaReady: boolean;
+      supabaseSchemaError: string | null;
+      lastUpdatedAt: string;
+    };
+    counts: {
+      users: number;
+      platforms: number;
+      vip_plans: number;
+      announcements: number;
+      payments: number;
+    };
+  }> {
+    const res = await apiFetch('/api/admin/storage/status', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to check database storage status');
+    return data;
+  },
+
+  async getAdminMigrationSql(): Promise<{ sql: string }> {
+    const res = await apiFetch('/api/admin/storage/migration-sql', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load migration SQL');
+    return data;
+  },
+
+  async syncAdminStorageToSupabase(): Promise<{
+    synced: boolean;
+    error?: string;
+    counts?: {
+      users: number;
+      platforms: number;
+      vip_plans: number;
+      vip_batches: number;
+      announcements: number;
+      payment_records: number;
+    };
+    storage: {
+      mode: 'supabase' | 'supabase_cloud_storage' | 'local_json' | 'local_json_fallback';
+      supabaseConfigured: boolean;
+      supabaseSchemaReady: boolean;
+      supabaseSchemaError: string | null;
+      lastUpdatedAt: string;
+    };
+  }> {
+    const res = await apiFetch('/api/admin/storage/sync-supabase', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to verify & sync Supabase database');
+    return data;
+  },
+
+  // ==========================================================
+  // STUDENT GROWTH FEATURES (Exam Timer, Offer Board,
+  // 30-Day Daily Motivation, XP Leaderboard, Parents Report Card)
+  // ==========================================================
+
+  async getOfferBoard(): Promise<OfferBoardItem[]> {
+    const res = await apiFetch('/api/offer-board');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load Offer Board');
+    return data.offers || [];
+  },
+
+  async getTodayMotivation(): Promise<{ item: DailyMotivationItem; today_ist: string; day_number: number }> {
+    const res = await apiFetch('/api/daily-motivation/today');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load Daily Motivation');
+    return data;
+  },
+
+  async getXpLeaderboard(): Promise<LeaderboardResponse> {
+    const res = await apiFetch('/api/leaderboard', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load XP Leaderboard');
+    return data;
+  },
+
+  async getStudentExamTimer(): Promise<StudentExamTimer | null> {
+    const res = await apiFetch('/api/student/exam-timer', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load exam timer');
+    return data.timer || null;
+  },
+
+  async saveStudentExamTimer(
+    exam_name: string,
+    exam_datetime: string
+  ): Promise<{ timer: StudentExamTimer; message: string }> {
+    const res = await apiFetch('/api/student/exam-timer', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ exam_name, exam_datetime }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to save exam timer');
+    return data;
+  },
+
+  async getParentsReportCard(): Promise<ParentsReportCardData> {
+    const res = await apiFetch('/api/student/parents-report', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load Parents Report Card');
+    return data.report;
+  },
+
+  async saveParentReportSettings(payload: {
+    parent_name?: string;
+    parent_whatsapp?: string;
+    parent_email?: string;
+    auto_sunday_enabled?: boolean;
+  }): Promise<{ report: ParentsReportCardData; message: string }> {
+    const res = await apiFetch('/api/student/parents-report/settings', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to save parent settings');
+    return data;
+  },
+
+  async logStudySession(
+    minutes: number,
+    source: 'timer' | 'manual' | 'platform' = 'manual',
+    note = ''
+  ): Promise<{
+    success: boolean;
+    log: StudentStudyLog;
+    xp_earned: number;
+    report: ParentsReportCardData;
+    message: string;
+  }> {
+    const res = await apiFetch('/api/student/study-session', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ minutes, source, note }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to log study session');
+    return data;
+  },
+
+  async getAdminOfferBoard(): Promise<OfferBoardItem[]> {
+    const res = await apiFetch('/api/admin/offer-board', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load Admin Offer Board');
+    return data.offers || [];
+  },
+
+  async saveAdminOfferBoard(offers: Partial<OfferBoardItem>[]): Promise<{ offers: OfferBoardItem[]; message: string }> {
+    const res = await apiFetch('/api/admin/offer-board', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ offers }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to save Offer Board');
+    return data;
+  },
+
+  async getAdminDailyMotivations(): Promise<{
+    motivations: DailyMotivationItem[];
+    today: { item: DailyMotivationItem; today_ist: string; day_number: number };
+  }> {
+    const res = await apiFetch('/api/admin/daily-motivation', {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to load Daily Motivations');
+    return data;
+  },
+
+  async saveAdminDailyMotivations(
+    motivations: Partial<DailyMotivationItem>[]
+  ): Promise<{
+    motivations: DailyMotivationItem[];
+    today: { item: DailyMotivationItem; today_ist: string; day_number: number };
+    message: string;
+  }> {
+    const res = await apiFetch('/api/admin/daily-motivation', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ motivations }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to save Daily Motivations');
     return data;
   },
 };
