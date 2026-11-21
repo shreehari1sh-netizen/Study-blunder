@@ -234,7 +234,12 @@ if (fs.existsSync(PUBLIC_DIR)) {
       etag: true,
       setHeaders: (res, filePath) => {
         if (filePath.endsWith('manifest.json')) {
-          res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+          res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+          res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+        } else if (filePath.endsWith('sw.js')) {
+          res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Service-Worker-Allowed', '/');
         } else {
           res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
         }
@@ -7235,6 +7240,9 @@ async function startServer() {
         url.startsWith('/api') ||
         url.startsWith('/uploads') ||
         url.startsWith('/manifest.json') ||
+        url.startsWith('/sw.js') ||
+        url.startsWith('/favicon.ico') ||
+        url.startsWith('/logo.png') ||
         url.startsWith('/icon') ||
         url.startsWith('/apple-touch-icon')
       ) {
