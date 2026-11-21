@@ -2,35 +2,28 @@
   "id": "/",
   "name": "Study Blunder",
   "short_name": "Study Blunder",
-  "description": "STUDY BLUNDER - Student Learning Platform",
+  "description": "Study Blunder is a student learning platform providing educational resources, learning tools and student features.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#090909",
   "theme_color": "#090909",
-  "categories": ["education", "books"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/study-blunder-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/study-blunder-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-maskable-512.png",
+      "src": "/icons/study-blunder-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

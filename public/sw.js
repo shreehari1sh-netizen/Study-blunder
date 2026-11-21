@@ -1,11 +1,10 @@
-const CACHE_NAME = 'study-blunder-pwa-v1';
+const CACHE_NAME = 'study-blunder-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-maskable-192.png',
-  '/icon-maskable-512.png',
+  '/icons/study-blunder-192.png',
+  '/icons/study-blunder-512.png',
+  '/icons/study-blunder-maskable-512.png',
   '/apple-touch-icon.png',
   '/logo.png',
   '/favicon.ico',
@@ -40,6 +39,12 @@ self.addEventListener('fetch', (event) => {
 
   // Never intercept dynamic API, SSE streams, or uploaded proofs
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) {
+    return;
+  }
+
+  // Always fetch fresh manifest.json from network when online
+  if (url.pathname === '/manifest.json') {
+    event.respondWith(fetch(req).catch(() => caches.match(req)));
     return;
   }
 

@@ -225,17 +225,37 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
   );
 });
 
-// Serve public directory (PWA manifest, icons, favicons) with 7-day browser/APK caching
+// Dedicated PWA Web App Manifest endpoint (always fresh, valid MIME type & CORS for PWABuilder)
 const PUBLIC_DIR = path.resolve(process.cwd(), 'public');
+app.get('/manifest.json', (_req, res, next) => {
+  const candidates = [
+    path.join(PUBLIC_DIR, 'manifest.json'),
+    path.resolve(process.cwd(), 'dist', 'manifest.json'),
+  ];
+  const manifestPath = candidates.find((p) => fs.existsSync(p));
+  if (!manifestPath) return next();
+  try {
+    const raw = fs.readFileSync(manifestPath, 'utf-8');
+    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+    res.status(200).send(raw);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Serve public directory (PWA manifest, icons, favicons) with CORS & proper cache headers
 if (fs.existsSync(PUBLIC_DIR)) {
   app.use(
     express.static(PUBLIC_DIR, {
       maxAge: '7d',
       etag: true,
       setHeaders: (res, filePath) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
         if (filePath.endsWith('manifest.json')) {
           res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
-          res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+          res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
         } else if (filePath.endsWith('sw.js')) {
           res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -7243,6 +7263,7 @@ async function startServer() {
         url.startsWith('/sw.js') ||
         url.startsWith('/favicon.ico') ||
         url.startsWith('/logo.png') ||
+        url.startsWith('/icons/') ||
         url.startsWith('/icon') ||
         url.startsWith('/apple-touch-icon')
       ) {
